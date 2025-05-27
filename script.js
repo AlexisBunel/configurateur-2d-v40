@@ -81,11 +81,13 @@ function calculatePorteModuleWidth(configData) {
     // visible
     totalWidth += 10;
   }
+  console.log(totalWidth);
 
   // Ajout tierce si présente
   if (withTierce) {
-    totalWidth += 5 + tierceWidth + (charniereType === "invisible" ? 6 : 10);
+    totalWidth += 5 + tierceWidth;
   }
+  console.log(totalWidth);
 
   return totalWidth;
 }
