@@ -91,13 +91,11 @@ function calculatePorteModuleWidth(configData) {
     // visible
     totalWidth += 10;
   }
-  console.log(totalWidth);
 
   // Ajout tierce si présente
   if (withTierce) {
     totalWidth += 5 + tierceWidth;
   }
-  console.log(totalWidth);
 
   return totalWidth;
 }
@@ -184,12 +182,17 @@ function resetFixedModules() {
 }
 
 function handleManualModuleChange(configData, changedIndex, newValue) {
-  // À développer : logique de redistribution
-  console.log(`Module ${changedIndex + 1} fixé à ${newValue}mm`);
-  console.log("Modules fixés:", Array.from(fixedModules));
+  // console.log(`Module ${changedIndex + 1} fixé à ${newValue}mm`);
+  // console.log("Modules fixés:", Array.from(fixedModules));
+
+  // Synchroniser les modules avec la config
+  syncModulesToConfig(configData);
 
   // Recalculer et mettre à jour les autres modules
   redistributeModules(configData);
+
+  // Mettre à jour la config globale
+  // configManager.updateConfig(configData);
 }
 
 function isPorteModule(moduleIndex, configData) {
@@ -276,9 +279,10 @@ function redistributeModules(configData) {
     }
   });
 
-  console.log(
-    `Modules libres: ${freeModules.length}, Largeur restante: ${remainingWidth}mm`
-  );
+  // console.log(
+  //   `Modules libres: ${freeModules.length}, Largeur restante: ${remainingWidth}mm`
+  // );
+  console.log(configData);
 }
 
 function resetModules() {
@@ -316,7 +320,36 @@ function resetModules() {
   // 5. Réattacher les event listeners sur tous les modules libres
   updateModulesInputs(currentConfig);
 
-  console.log("Modules réinitialisés à leurs valeurs par défaut");
+  // 6. Synchroniser avec la config
+  syncModulesToConfig(currentConfig);
+  configManager.updateConfig(currentConfig);
+}
+
+function syncModulesToConfig(configData) {
+  // S'assurer que config.modules existe et a la bonne taille
+  if (!configData.modules) {
+    configData.modules = [];
+  }
+
+  const modulesCount = configData.modulesCount;
+
+  // Ajuster la taille du tableau modules
+  while (configData.modules.length < modulesCount) {
+    configData.modules.push({ width: 800 }); // valeur par défaut
+  }
+  while (configData.modules.length > modulesCount) {
+    configData.modules.pop();
+  }
+
+  // Synchroniser avec les valeurs des inputs
+  for (let i = 0; i < modulesCount; i++) {
+    const input = document.getElementById(`widthModule${i + 1}`);
+    if (input && input.value) {
+      configData.modules[i].width = parseInt(input.value) || 800;
+    }
+  }
+
+  return configData;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
