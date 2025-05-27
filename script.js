@@ -57,6 +57,8 @@ function updateUIVisibility(eventData) {
   console.log("Mise à jour de l'interface avec:", configData);
 }
 
+// fonctions modules
+
 function calculateModuleWidths(configData) {
   const totalWidth = configData.width;
   const modulesCount = configData.modulesCount;
@@ -352,10 +354,172 @@ function syncModulesToConfig(configData) {
   return configData;
 }
 
+// Fonctions traverses
+
+function addTraverse() {
+  const currentConfig = configManager.getConfig();
+  const modulesCount = currentConfig.modulesCount;
+
+  // Créer un formulaire dynamique
+  const formHTML = `
+        <div id="traverse-form" style="border: 2px solid #333; padding: 15px; margin: 10px 0; background: #f9f9f9;">
+            <h4>Nouvelle traverse</h4>
+            <label>Hauteur (mm) : 
+                <input type="number" id="traverse-height" value="1200" min="100" max="2400" />
+            </label>
+            <br><br>
+            <label>Modules concernés :</label><br>
+            ${generateModuleCheckboxes(modulesCount)}
+            <br><br>
+            <button type="button" id="confirm-traverse">Confirmer</button>
+            <button type="button" id="cancel-traverse">Annuler</button>
+        </div>
+    `;
+
+  // Ajouter le formulaire après le bouton "Ajouter"
+  const addButton = document.getElementById("add-traverse");
+  addButton.insertAdjacentHTML("afterend", formHTML);
+
+  // Masquer le bouton "Ajouter" pendant l'édition
+  addButton.style.display = "none";
+
+  // Attacher les événements
+  document
+    .getElementById("confirm-traverse")
+    .addEventListener("click", confirmTraverse);
+  document
+    .getElementById("cancel-traverse")
+    .addEventListener("click", cancelTraverse);
+}
+
+function generateModuleCheckboxes(modulesCount) {
+  let checkboxes = "";
+  for (let i = 1; i <= modulesCount; i++) {
+    checkboxes += `
+            <label style="margin-right: 15px;">
+                <input type="checkbox" id="module-${i}" value="${i}" ${
+      i === 1 ? "checked" : ""
+    } />
+                Module ${i}
+            </label>
+        `;
+  }
+  return checkboxes;
+}
+
+function confirmTraverse() {
+  const currentConfig = configManager.getConfig();
+  const traverseId = Date.now();
+
+  // Récupérer la hauteur
+  const height = parseInt(document.getElementById("traverse-height").value);
+
+  // Récupérer les modules sélectionnés
+  const selectedModules = [];
+  const checkboxes = document.querySelectorAll('[id^="module-"]:checked');
+  checkboxes.forEach((checkbox) => {
+    selectedModules.push(parseInt(checkbox.value));
+  });
+
+  if (selectedModules.length === 0) {
+    alert("Veuillez sélectionner au moins un module");
+    return;
+  }
+
+  // Ajouter à la config
+  if (!currentConfig.traverses) {
+    currentConfig.traverses = [];
+  }
+
+  currentConfig.traverses.push({
+    id: traverseId,
+    height: height,
+    modules: selectedModules,
+  });
+
+  // Nettoyer et mettre à jour
+  cleanupTraverseForm();
+  updateTraversesSelect(currentConfig);
+  configManager.updateConfig(currentConfig);
+
+  console.log("Traverse ajoutée:", currentConfig.traverses);
+}
+
+function cancelTraverse() {
+  cleanupTraverseForm();
+}
+
+function cleanupTraverseForm() {
+  // Supprimer le formulaire
+  const form = document.getElementById("traverse-form");
+  if (form) {
+    form.remove();
+  }
+
+  // Réafficher le bouton "Ajouter"
+  document.getElementById("add-traverse").style.display = "block";
+}
+
+function updateTraversesSelect(configData) {
+  const select = document.getElementById("list-traverses");
+
+  // Vider le select (garder l'option par défaut)
+  select.innerHTML =
+    '<option value="" selected>Sélectionner une traverse</option>';
+
+  // Ajouter une option pour chaque traverse
+  if (configData.traverses) {
+    configData.traverses.forEach((traverse) => {
+      const option = document.createElement("option");
+      option.value = traverse.id;
+      option.textContent = `Traverse ${
+        traverse.height
+      }mm (modules: ${traverse.modules.join(", ")})`;
+      select.appendChild(option);
+    });
+  }
+}
+
+function deleteTraverse() {
+  const select = document.getElementById("list-traverses");
+  const selectedId = select.value;
+
+  if (!selectedId) {
+    alert("Veuillez sélectionner une traverse à supprimer");
+    return;
+  }
+
+  const currentConfig = configManager.getConfig();
+
+  // Supprimer la traverse de la config
+  if (currentConfig.traverses) {
+    currentConfig.traverses = currentConfig.traverses.filter(
+      (traverse) => traverse.id != selectedId
+    );
+  }
+
+  // Mettre à jour l'interface
+  updateTraversesSelect(currentConfig);
+
+  // Mettre à jour la config
+  configManager.updateConfig(currentConfig);
+
+  console.log(
+    "Traverse supprimée, traverses restantes:",
+    currentConfig.traverses
+  );
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await initConfigManager();
   setupEventListeners();
   configManager.subscribe("configChanged", updateUIVisibility);
   updateUIVisibility({ newConfig: configManager.getConfig() });
   document.getElementById("reset-btn").addEventListener("click", resetModules);
+  document
+    .getElementById("add-traverse")
+    .addEventListener("click", addTraverse);
+  document
+    .getElementById("delete-traverse")
+    .addEventListener("click", deleteTraverse);
 });
