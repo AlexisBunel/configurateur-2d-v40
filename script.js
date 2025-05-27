@@ -1,3 +1,5 @@
+let fixedModules = new Set();
+
 function setupEventListeners() {
   const inputs = document.querySelectorAll("[data-config-key]");
 
@@ -10,6 +12,14 @@ function setupEventListeners() {
 
 function updateUIVisibility(eventData) {
   const configData = eventData.newConfig;
+  const oldConfig = eventData.oldConfig;
+  if (
+    !oldConfig ||
+    oldConfig.type !== configData.type ||
+    oldConfig.modulesCount !== configData.modulesCount
+  ) {
+    resetFixedModules();
+  }
   const porteForm = document.getElementById("configuration-porte");
   const porteOptionsForm = document.getElementById(
     "configuration-options-porte"
@@ -103,8 +113,6 @@ function distributeModuleWidths(configData) {
   if (hasPorte) {
     // Utiliser la nouvelle fonction de calcul
     const porteModuleWidth = calculatePorteModuleWidth(configData);
-    console.log("largeur porte : ", porteModuleWidth);
-    console.log("index porte : ", porteIndex);
 
     // Largeur restante pour les autres modules
     const remainingWidth = availableWidth - porteModuleWidth;
@@ -115,9 +123,7 @@ function distributeModuleWidths(configData) {
     for (let i = 1; i <= modulesCount; i++) {
       if (i == porteIndex) {
         moduleWidths.push(porteModuleWidth);
-        console.log("porteIndex / i", i);
       } else {
-        console.log("module standard");
         moduleWidths.push(standardModuleWidth);
       }
     }
@@ -159,11 +165,158 @@ function updateModulesInputs(configData) {
   }
 
   const newInputs = modulesContainer.querySelectorAll("[data-config-key]");
-  newInputs.forEach((input) => {
-    input.addEventListener("change", () => {
-      configManager.loadConfig();
+  newInputs.forEach((input, index) => {
+    input.addEventListener("change", (event) => {
+      const moduleIndex = index; // Index dans le tableau
+      const newValue = parseInt(event.target.value);
+
+      // Marquer ce module comme fixé
+      if (!isPorteModule(moduleIndex, configData)) {
+        fixedModules.add(moduleIndex);
+        handleManualModuleChange(configData, moduleIndex, newValue);
+      }
     });
   });
+}
+
+function resetFixedModules() {
+  fixedModules.clear();
+}
+
+function handleManualModuleChange(configData, changedIndex, newValue) {
+  // À développer : logique de redistribution
+  console.log(`Module ${changedIndex + 1} fixé à ${newValue}mm`);
+  console.log("Modules fixés:", Array.from(fixedModules));
+
+  // Recalculer et mettre à jour les autres modules
+  redistributeModules(configData);
+}
+
+function isPorteModule(moduleIndex, configData) {
+  const hasPorte = configData.type === "porte";
+  const porteIndex = configData.porteIndex;
+  return hasPorte && moduleIndex + 1 == porteIndex; // +1 car index vs position
+}
+
+function redistributeModules(configData) {
+  const availableWidth = calculateModuleWidths(configData);
+  const modulesCount = configData.modulesCount;
+
+  // Calculer la largeur utilisée par les modules fixés
+  let usedWidth = 0;
+  let freeModules = []; // Liste des modules libres
+
+  for (let i = 0; i < modulesCount; i++) {
+    if (isPorteModule(i, configData)) {
+      usedWidth += calculatePorteModuleWidth(configData);
+    } else if (fixedModules.has(i)) {
+      // Module fixé par l'utilisateur
+      const input = document.getElementById(`widthModule${i + 1}`);
+      usedWidth += parseInt(input.value) || 300;
+    } else {
+      // Module libre
+      freeModules.push(i);
+    }
+  }
+
+  // Largeur restante pour les modules libres
+  const remainingWidth = availableWidth - usedWidth;
+
+  // Réinitialiser tous les inputs libres
+  freeModules.forEach((moduleIndex) => {
+    const input = document.getElementById(`widthModule${moduleIndex + 1}`);
+    if (input) {
+      // Supprimer l'ancien event listener en clonant l'élément
+      const newInput = input.cloneNode(true);
+      input.parentNode.replaceChild(newInput, input);
+    }
+  });
+
+  if (freeModules.length === 1) {
+    // Un seul module libre = il devient automatiquement calculé et verrouillé
+    const lastFreeIndex = freeModules[0];
+    const input = document.getElementById(`widthModule${lastFreeIndex + 1}`);
+    if (input) {
+      input.value = remainingWidth;
+      input.readonly = true;
+      input.disabled = true; // Plus sûr que readonly
+      input.style.backgroundColor = "#e0e0e0";
+      input.title = "Calculé automatiquement";
+      // PAS d'event listener sur ce module
+    }
+  } else if (freeModules.length > 1) {
+    // Plusieurs modules libres = répartition égale avec event listeners
+    const standardModuleWidth = Math.floor(remainingWidth / freeModules.length);
+
+    freeModules.forEach((moduleIndex) => {
+      const input = document.getElementById(`widthModule${moduleIndex + 1}`);
+      if (input) {
+        input.value = standardModuleWidth;
+        input.readonly = false;
+        input.disabled = false;
+        input.style.backgroundColor = "";
+        input.title = "";
+
+        // Rajouter l'event listener SEULEMENT sur les modules modifiables
+        input.addEventListener("change", (event) => {
+          const newValue = parseInt(event.target.value);
+          fixedModules.add(moduleIndex);
+          handleManualModuleChange(configData, moduleIndex, newValue);
+        });
+      }
+    });
+  }
+
+  // Style pour les modules fixés par l'utilisateur
+  fixedModules.forEach((moduleIndex) => {
+    const input = document.getElementById(`widthModule${moduleIndex + 1}`);
+    if (input) {
+      input.style.backgroundColor = "#d4edda";
+      input.title = "Fixé par l'utilisateur";
+    }
+  });
+
+  console.log(
+    `Modules libres: ${freeModules.length}, Largeur restante: ${remainingWidth}mm`
+  );
+}
+
+function resetModules() {
+  // 1. Vider les modules fixés
+  resetFixedModules();
+
+  // 2. Récupérer la config actuelle
+  const currentConfig = configManager.getConfig();
+
+  // 3. Recalculer les largeurs par défaut (répartition équitable)
+  const moduleWidths = distributeModuleWidths(currentConfig);
+
+  // 4. Mettre à jour tous les inputs avec les valeurs par défaut
+  const modulesCount = currentConfig.modulesCount;
+
+  for (let i = 1; i <= modulesCount; i++) {
+    const input = document.getElementById(`widthModule${i}`);
+    if (input) {
+      // Réinitialiser la valeur
+      input.value = moduleWidths[i - 1];
+
+      // Réinitialiser l'état visuel (sauf module porte)
+      const isPorteModule =
+        currentConfig.type === "porte" && currentConfig.porteIndex == i;
+
+      if (!isPorteModule) {
+        input.readonly = false;
+        input.disabled = false;
+        input.style.backgroundColor = "";
+        input.title = "";
+      }
+    }
+  }
+
+  // 5. Réattacher les event listeners sur tous les modules libres
+  updateModulesInputs(currentConfig);
+
+  console.log("Modules réinitialisés à leurs valeurs par défaut");
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -171,5 +324,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
   configManager.subscribe("configChanged", updateUIVisibility);
   updateUIVisibility({ newConfig: configManager.getConfig() });
-  console.log("Script.js chargé !");
+  document.getElementById("reset-btn").addEventListener("click", resetModules);
 });
