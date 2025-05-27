@@ -90,6 +90,7 @@ class ConfigEventManager {
 
   loadConfig() {
     this.config = this.generateConfigFromForm();
+    this.updateConfig(this.config);
     console.log(this.config);
     return this.config;
   }
