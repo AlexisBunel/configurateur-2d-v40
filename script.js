@@ -9,6 +9,60 @@ function setupEventListeners() {
     });
   });
 
+  const widthInput = document.getElementById("width");
+  if (widthInput) {
+    widthInput.addEventListener("change", () => {
+      const config = configManager.getConfig();
+      updateModulesCountOptions(config);
+      handleSingleModulePorte(config);
+      configManager.loadConfig();
+    });
+  }
+
+  const modulesCountSelect = document.getElementById("modulesCount");
+  if (modulesCountSelect) {
+    modulesCountSelect.addEventListener("change", () => {
+      const config = configManager.getConfig();
+      updatePorteIndexOptions(config);
+      handleSingleModulePorte(config);
+      configManager.loadConfig(); // Recharger après la mise à jour des options
+    });
+  }
+
+  const tierceSelect = document.getElementById("tierce");
+  if (tierceSelect) {
+    tierceSelect.addEventListener("change", () => {
+      const config = configManager.getConfig();
+      handleSingleModulePorte(config);
+    });
+  }
+
+  // Listener spécial pour la largeur de porte en mode module unique avec tierce
+  const porteWidthInput = document.querySelector(
+    '[data-config-key="porte.porteWidth"]'
+  );
+  if (porteWidthInput) {
+    porteWidthInput.addEventListener("change", () => {
+      const config = configManager.getConfig();
+      // Si on est en mode module unique avec tierce, recalculer la tierce
+      if (
+        config.modulesCount === 1 &&
+        config.type === "porte" &&
+        config.porte?.withTierce
+      ) {
+        handleSingleModulePorte(config);
+      }
+    });
+  }
+
+  const charniereSelect = document.getElementById("charniere");
+  if (charniereSelect) {
+    charniereSelect.addEventListener("change", () => {
+      const config = configManager.getConfig();
+      handleSingleModulePorte(config);
+    });
+  }
+
   const imposteSelect = document.getElementById("imposte");
   if (imposteSelect) {
     imposteSelect.addEventListener("change", () => {
@@ -41,6 +95,10 @@ function setupEventListeners() {
 function updateUIVisibility(eventData) {
   const configData = eventData.newConfig;
   const oldConfig = eventData.oldConfig;
+
+  updateModulesCountOptions(configData);
+  updatePorteIndexOptions(configData);
+
   if (
     !oldConfig ||
     oldConfig.type !== configData.type ||
@@ -65,6 +123,7 @@ function updateUIVisibility(eventData) {
     labelModulePorte.classList.remove("hidden");
     indexPorte.classList.remove("hidden");
     handleDormantOptions(configData);
+    handleSingleModulePorte(configData);
   } else {
     porteForm.classList.add("hidden");
     porteOptionsForm.classList.add("hidden");
@@ -82,6 +141,7 @@ function updateUIVisibility(eventData) {
   }
 
   updateModulesInputs(configData);
+  updateDimensionsOuverture(configData);
 
   console.log("Mise à jour de l'interface avec:", configData);
 }
@@ -168,6 +228,160 @@ function handlePorteHeight(configData) {
       }
     }
   }
+  updateDimensionsOuverture(configData);
+}
+
+function updateDimensionsOuverture(config) {
+  const displayElement = document.getElementById("dimensions-ouverture");
+  if (!displayElement) return;
+
+  let hauteur, largeur;
+
+  // Calcule de la hauteur
+  if (config.porte?.withImposte) {
+    hauteur = (config.porte?.porteHeight || 0) + 15 + 51;
+  } else {
+    hauteur = config.height || 0;
+  }
+
+  // Calcule de la largeur
+  const porteWidth = config.porte?.porteWidth || 0;
+  const charniere = config.porte?.charniereType || "visible";
+  const withTierce = config.porte?.withTierce || false;
+  const tierceWidth = config.porte?.tierceWidth || 0;
+
+  if (!withTierce) {
+    largeur = porteWidth + 102 + (charniere === "invisible" ? 6 : 10);
+  } else {
+    largeur =
+      porteWidth + tierceWidth + 102 + (charniere === "invisible" ? 11 : 15);
+  }
+
+  displayElement.textContent = `Dimensions de l'ouverture : ${hauteur}mm x ${largeur}mm`;
+}
+
+function handleSingleModulePorte(configData) {
+  // Vérifier si nous avons un seul module avec une porte
+  if (configData.modulesCount !== 1 || configData.type !== "porte") {
+    // Déverrouiller les inputs si ce n'est pas le cas spécial
+    unlockPorteInputs();
+    return;
+  }
+
+  const width = configData.width || 4000;
+  const withTierce = configData.porte?.withTierce || false;
+  const charniereType = configData.porte?.charniereType || "visible";
+
+  const porteWidthInput = document.querySelector(
+    '[data-config-key="porte.porteWidth"]'
+  );
+  const tierceWidthInput = document.querySelector(
+    '[data-config-key="porte.tierceWidth"]'
+  );
+
+  if (!withTierce) {
+    // CAS 1: Porte seule (sans tierce)
+    // Largeur de porte imposée = largeur totale - profils - charnières
+    let porteWidth;
+    if (charniereType === "visible") {
+      porteWidth = width - 102 - 10; // 102 = profils, 10 = charnières visibles
+    } else {
+      porteWidth = width - 102 - 6; // 102 = profils, 6 = charnières invisibles
+    }
+
+    // Verrouiller l'input de largeur de porte
+    if (porteWidthInput) {
+      porteWidthInput.value = porteWidth;
+      porteWidthInput.readOnly = true;
+      porteWidthInput.style.backgroundColor = "#f0f0f0";
+      porteWidthInput.title = "Calculé automatiquement (module unique)";
+    }
+
+    // S'assurer que la config est mise à jour
+    if (configData.porte) {
+      configData.porte.porteWidth = porteWidth;
+    }
+  } else {
+    // CAS 2: Porte avec tierce
+    const currentPorteWidth = configData.porte?.porteWidth || 730;
+
+    // Calculer les limites pour la largeur de porte
+    let minPorteWidth, maxPorteWidth, tierceWidth;
+
+    if (charniereType === "visible") {
+      const availableWidth = width - 51 - 51 - 15; // 51+51 = profils, 15 = jeu
+      minPorteWidth = Math.ceil(availableWidth / 2);
+      maxPorteWidth = availableWidth - 200; // 200 = largeur mini tierce
+      tierceWidth = availableWidth - currentPorteWidth;
+    } else {
+      const availableWidth = width - 51 - 51 - 11; // 51+51 = profils, 11 = jeu
+      minPorteWidth = Math.ceil(availableWidth / 2);
+      maxPorteWidth = availableWidth - 200; // 200 = largeur mini tierce
+      tierceWidth = availableWidth - currentPorteWidth;
+    }
+
+    // Ajuster la largeur de porte si nécessaire
+    let adjustedPorteWidth = currentPorteWidth;
+    if (currentPorteWidth < minPorteWidth) {
+      adjustedPorteWidth = minPorteWidth;
+    } else if (currentPorteWidth > maxPorteWidth) {
+      adjustedPorteWidth = maxPorteWidth;
+    }
+
+    // Recalculer la largeur de tierce
+    if (charniereType === "visible") {
+      tierceWidth = width - 51 - 51 - 15 - adjustedPorteWidth;
+    } else {
+      tierceWidth = width - 51 - 51 - 11 - adjustedPorteWidth;
+    }
+
+    // Mettre à jour les inputs
+    if (porteWidthInput) {
+      porteWidthInput.value = adjustedPorteWidth;
+      porteWidthInput.min = minPorteWidth;
+      porteWidthInput.max = maxPorteWidth;
+      porteWidthInput.readOnly = false;
+      porteWidthInput.style.backgroundColor = "";
+      porteWidthInput.title = `Largeur entre ${minPorteWidth}mm et ${maxPorteWidth}mm`;
+    }
+
+    if (tierceWidthInput) {
+      tierceWidthInput.value = tierceWidth;
+      tierceWidthInput.readOnly = true;
+      tierceWidthInput.style.backgroundColor = "#f0f0f0";
+      tierceWidthInput.title = "Calculé automatiquement (largeur restante)";
+    }
+
+    // Mettre à jour la config
+    if (configData.porte) {
+      configData.porte.porteWidth = adjustedPorteWidth;
+      configData.porte.tierceWidth = tierceWidth;
+    }
+  }
+}
+
+function unlockPorteInputs() {
+  // Fonction pour déverrouiller les inputs quand on n'est plus en mode "module unique"
+  const porteWidthInput = document.querySelector(
+    '[data-config-key="porte.porteWidth"]'
+  );
+  const tierceWidthInput = document.querySelector(
+    '[data-config-key="porte.tierceWidth"]'
+  );
+
+  if (porteWidthInput) {
+    porteWidthInput.readOnly = false;
+    porteWidthInput.style.backgroundColor = "";
+    porteWidthInput.title = "";
+    porteWidthInput.min = "400";
+    porteWidthInput.max = "1230";
+  }
+
+  if (tierceWidthInput) {
+    tierceWidthInput.readOnly = false;
+    tierceWidthInput.style.backgroundColor = "";
+    tierceWidthInput.title = "";
+  }
 }
 
 // Fonctions modules
@@ -187,6 +401,79 @@ function calculateModuleWidths(configData) {
   console.log(`Largeur disponible pour modules: ${availableWidth}mm`);
 
   return availableWidth;
+}
+
+function updateModulesCountOptions(configData) {
+  const modulesCountSelect = document.getElementById("modulesCount");
+  const width = configData.width || 4000;
+
+  // Calculer le nombre maximum de modules basé sur la largeur
+  // Chaque module doit faire au minimum 300mm
+  const maxModules = Math.floor(width / 300);
+  const minModules = Math.ceil(width / 1500);
+
+  // Garder la valeur actuelle si elle est valide
+  const currentValue = parseInt(modulesCountSelect.value) || minModules;
+
+  modulesCountSelect.innerHTML = "";
+
+  for (let i = minModules; i <= maxModules; i++) {
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = i;
+
+    // Garder la sélection actuelle si elle est encore valide
+    if (
+      i === currentValue &&
+      currentValue >= minModules &&
+      currentValue <= maxModules
+    ) {
+      option.selected = true;
+    } else if (
+      i === minModules &&
+      (currentValue < minModules || currentValue > maxModules)
+    ) {
+      // Si la valeur actuelle devient invalide, sélectionner 1 par défaut
+      option.selected = true;
+    }
+
+    modulesCountSelect.appendChild(option);
+  }
+
+  if (currentValue < minModules || currentValue > maxModules) {
+    modulesCountSelect.value = minModules.toString();
+    modulesCountSelect.dispatchEvent(new Event("change"));
+  }
+}
+
+function updatePorteIndexOptions(configData) {
+  const porteIndexSelect = document.getElementById("modulePorte");
+  const modulesCount = configData.modulesCount || 1;
+
+  // Garder la valeur actuelle si elle est valide
+  const currentValue = parseInt(porteIndexSelect.value) || 1;
+
+  porteIndexSelect.innerHTML = "";
+
+  for (let i = 1; i <= modulesCount; i++) {
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = i;
+
+    // Garder la sélection actuelle si elle est encore valide
+    if (i === currentValue && currentValue <= modulesCount) {
+      option.selected = true;
+    } else if (i === 1 && currentValue > modulesCount) {
+      option.selected = true;
+    }
+
+    porteIndexSelect.appendChild(option);
+  }
+
+  if (currentValue > modulesCount) {
+    porteIndexSelect.value = "1";
+    porteIndexSelect.dispatchEvent(new Event("change"));
+  }
 }
 
 function calculatePorteModuleWidth(configData) {
