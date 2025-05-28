@@ -4,6 +4,7 @@
 
 body {
   font-family: sans-serif;
+  background-color: #fcfcfc;
 }
 
 .hidden {
@@ -33,10 +34,12 @@ svg {
 }
 
 form {
+  background-color: white;
   display: flex;
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  border: 2px solid #333;
+  border-radius: 10px;
+  border: 1px solid #ccc;
   padding: 10px;
 }

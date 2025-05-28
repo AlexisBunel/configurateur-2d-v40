@@ -57,7 +57,7 @@ function updateUIVisibility(eventData) {
   console.log("Mise à jour de l'interface avec:", configData);
 }
 
-// fonctions modules
+// Fonctions modules
 
 function calculateModuleWidths(configData) {
   const totalWidth = configData.width;
@@ -356,6 +356,8 @@ function syncModulesToConfig(configData) {
 
 // Fonctions traverses
 
+// Traverses Verrières
+
 function addTraverse() {
   const currentConfig = configManager.getConfig();
   const modulesCount = currentConfig.modulesCount;
@@ -370,7 +372,7 @@ function addTraverse() {
             <br><br>
             <label>Modules concernés :</label><br>
             ${generateModuleCheckboxes(modulesCount)}
-            <br><br>
+            <br>
             <button type="button" id="confirm-traverse">Confirmer</button>
             <button type="button" id="cancel-traverse">Annuler</button>
         </div>
@@ -402,14 +404,31 @@ function generateModuleCheckboxes(modulesCount) {
     } />
                 Module ${i}
             </label>
+            <br>
         `;
   }
   return checkboxes;
 }
 
+function validateTraverseExists(height, selectedModules, existingTraverses) {
+  if (!existingTraverses || existingTraverses.length === 0) {
+    return false; // Aucune traverse existante
+  }
+
+  // Vérifier si une traverse existe déjà à cette hauteur sur un des modules sélectionnés
+  return existingTraverses.some((existingTraverse) => {
+    // Même hauteur ET au moins un module en commun
+    return (
+      existingTraverse.height === height &&
+      existingTraverse.modules.some((module) =>
+        selectedModules.includes(module)
+      )
+    );
+  });
+}
+
 function confirmTraverse() {
   const currentConfig = configManager.getConfig();
-  const traverseId = Date.now();
 
   // Récupérer la hauteur
   const height = parseInt(document.getElementById("traverse-height").value);
@@ -426,7 +445,18 @@ function confirmTraverse() {
     return;
   }
 
-  // Ajouter à la config
+  // VALIDATION : Vérifier les doublons
+  if (
+    validateTraverseExists(height, selectedModules, currentConfig.traverses)
+  ) {
+    alert(
+      `Une traverse existe déjà à ${height}mm sur un ou plusieurs de ces modules.`
+    );
+    return;
+  }
+
+  // Ajouter à la config (code existant)
+  const traverseId = Date.now();
   if (!currentConfig.traverses) {
     currentConfig.traverses = [];
   }
@@ -510,6 +540,212 @@ function deleteTraverse() {
   );
 }
 
+// Traverses Porte
+
+// Fonctions traverses de porte
+function addTraversePorte() {
+  const currentConfig = configManager.getConfig();
+
+  if (currentConfig.type !== "porte") {
+    alert("Cette fonction n'est disponible qu'avec une porte");
+    return;
+  }
+
+  const traverseType = currentConfig.porte?.traverseType || "28";
+  const withTierce = currentConfig.porte?.withTierce || false;
+
+  // Créer un formulaire avec option tierce si applicable
+  const tierceOption = withTierce
+    ? `
+      <label>
+          <input type="checkbox" id="traverse-on-tierce" />
+          Également sur la tierce
+      </label>
+      <br><br>
+  `
+    : "";
+
+  const formHTML = `
+      <div id="traverse-porte-form" style="border: 2px solid #333; padding: 15px; margin: 10px 0; background: #f9f9f9;">
+          <h4>Nouvelle traverse de porte</h4>
+          <label>Hauteur depuis le sol (mm) : 
+              <input type="number" id="traverse-porte-height" value="1000" min="100" max="2200" />
+          </label>
+          <br><br>
+          <label>Type : ${traverseType}mm (défini dans les options)</label>
+          <br><br>
+          ${tierceOption}
+          <button type="button" id="confirm-traverse-porte">Confirmer</button>
+          <button type="button" id="cancel-traverse-porte">Annuler</button>
+      </div>
+  `;
+
+  // Ajouter le formulaire après le bouton "Ajouter"
+  const addButton = document.getElementById("add-traverse-porte");
+  addButton.insertAdjacentHTML("afterend", formHTML);
+
+  // Masquer le bouton "Ajouter" pendant l'édition
+  addButton.style.display = "none";
+
+  // Attacher les événements
+  document
+    .getElementById("confirm-traverse-porte")
+    .addEventListener("click", confirmTraversePorte);
+  document
+    .getElementById("cancel-traverse-porte")
+    .addEventListener("click", cancelTraversePorte);
+}
+
+function validateTraversePorteExists(height, onTierce, existingTraversesPorte) {
+  if (!existingTraversesPorte || existingTraversesPorte.length === 0) {
+    return false; // Aucune traverse existante
+  }
+
+  // Vérifier si une traverse existe déjà à cette hauteur avec le même état tierce
+  return existingTraversesPorte.some((existingTraverse) => {
+    return (
+      existingTraverse.height === height &&
+      existingTraverse.onTierce === onTierce
+    );
+  });
+}
+
+function findExistingTraversePorte(height, existingTraversesPorte) {
+  if (!existingTraversesPorte || existingTraversesPorte.length === 0) {
+    return null;
+  }
+
+  // Chercher une traverse à cette hauteur (peu importe l'état tierce)
+  return existingTraversesPorte.find(
+    (existingTraverse) => existingTraverse.height === height
+  );
+}
+
+function confirmTraversePorte() {
+  const currentConfig = configManager.getConfig();
+
+  // Récupérer la hauteur
+  const height = parseInt(
+    document.getElementById("traverse-porte-height").value
+  );
+  const traverseType = currentConfig.porte?.traverseType || "28";
+
+  // Récupérer l'état de la tierce
+  const onTierceCheckbox = document.getElementById("traverse-on-tierce");
+  const onTierce = onTierceCheckbox ? onTierceCheckbox.checked : false;
+
+  // Initialiser la config si nécessaire
+  if (!currentConfig.traversesPorte) {
+    currentConfig.traversesPorte = [];
+  }
+
+  // NOUVELLE LOGIQUE : Chercher une traverse existante à cette hauteur
+  const existingTraverse = findExistingTraversePorte(
+    height,
+    currentConfig.traversesPorte
+  );
+
+  if (existingTraverse) {
+    // Traverse existante trouvée
+    if (existingTraverse.onTierce === onTierce) {
+      // Même configuration → erreur
+      alert(
+        `Une traverse existe déjà à ${height}mm sur ${
+          onTierce ? "porte + tierce" : "porte uniquement"
+        }.`
+      );
+      return;
+    } else {
+      // Configuration différente → mettre à jour
+      existingTraverse.onTierce = onTierce;
+      existingTraverse.type = traverseType; // Mettre à jour le type aussi
+
+      const tierceText = onTierce ? "porte + tierce" : "porte uniquement";
+      alert(
+        `Traverse à ${height}mm mise à jour : maintenant sur ${tierceText}`
+      );
+    }
+  } else {
+    // Aucune traverse existante → créer une nouvelle
+    const traverseId = Date.now();
+
+    currentConfig.traversesPorte.push({
+      id: traverseId,
+      height: height,
+      type: traverseType,
+      onTierce: onTierce,
+    });
+  }
+
+  // Nettoyer et mettre à jour
+  cleanupTraversePorteForm();
+  updateTraversesPorteSelect(currentConfig);
+  configManager.updateConfig(currentConfig);
+
+  console.log("Traverses de porte mises à jour:", currentConfig.traversesPorte);
+}
+
+function cancelTraversePorte() {
+  cleanupTraversePorteForm();
+}
+
+function cleanupTraversePorteForm() {
+  // Supprimer le formulaire
+  const form = document.getElementById("traverse-porte-form");
+  if (form) {
+    form.remove();
+  }
+
+  // Réafficher le bouton "Ajouter"
+  document.getElementById("add-traverse-porte").style.display = "block";
+}
+
+function updateTraversesPorteSelect(configData) {
+  const select = document.getElementById("list-traverses-tierce");
+
+  // Vider le select (garder l'option par défaut)
+  select.innerHTML =
+    '<option value="" selected>Sélectionner une traverse</option>';
+
+  // Ajouter une option pour chaque traverse
+  if (configData.traversesPorte) {
+    configData.traversesPorte.forEach((traverse) => {
+      const option = document.createElement("option");
+      option.value = traverse.id;
+      const tierceText = traverse.onTierce ? " + tierce" : "";
+      option.textContent = `Traverse ${traverse.height}mm (type ${traverse.type}${tierceText})`;
+      select.appendChild(option);
+    });
+  }
+}
+
+function deleteTraversePorte() {
+  const select = document.getElementById("list-traverses-tierce");
+  const selectedId = select.value;
+
+  if (!selectedId) {
+    alert("Veuillez sélectionner une traverse à supprimer");
+    return;
+  }
+
+  const currentConfig = configManager.getConfig();
+
+  // Supprimer la traverse de la config
+  if (currentConfig.traversesPorte) {
+    currentConfig.traversesPorte = currentConfig.traversesPorte.filter(
+      (traverse) => traverse.id != selectedId
+    );
+  }
+
+  // Mettre à jour l'interface
+  updateTraversesPorteSelect(currentConfig);
+
+  // Mettre à jour la config
+  configManager.updateConfig(currentConfig);
+
+  console.log("Traverse de porte supprimée:", currentConfig.traversesPorte);
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await initConfigManager();
   setupEventListeners();
@@ -522,4 +758,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   document
     .getElementById("delete-traverse")
     .addEventListener("click", deleteTraverse);
+  document
+    .getElementById("add-traverse-porte")
+    .addEventListener("click", addTraversePorte);
+
+  document
+    .getElementById("delete-traverse-tierce")
+    .addEventListener("click", deleteTraversePorte);
 });
