@@ -8,6 +8,34 @@ function setupEventListeners() {
       configManager.loadConfig();
     });
   });
+
+  const imposteSelect = document.getElementById("imposte");
+  if (imposteSelect) {
+    imposteSelect.addEventListener("change", () => {
+      const config = configManager.getConfig();
+      handleDormantOptions(config);
+    });
+  }
+
+  // Listener pour le dormant (pour recalculer la hauteur de porte)
+  const dormantSelect = document.getElementById("dormant");
+  if (dormantSelect) {
+    dormantSelect.addEventListener("change", () => {
+      const config = configManager.getConfig();
+      handlePorteHeight(config);
+    });
+  }
+
+  // Listener pour la hauteur totale (pour recalculer la hauteur de porte)
+  const heightInput = document.getElementById("height");
+  if (heightInput) {
+    heightInput.addEventListener("change", () => {
+      const config = configManager.getConfig();
+      if (config.type === "porte") {
+        handlePorteHeight(config);
+      }
+    });
+  }
 }
 
 function updateUIVisibility(eventData) {
@@ -36,6 +64,7 @@ function updateUIVisibility(eventData) {
     traversesPorteForm.classList.remove("hidden");
     labelModulePorte.classList.remove("hidden");
     indexPorte.classList.remove("hidden");
+    handleDormantOptions(configData);
   } else {
     porteForm.classList.add("hidden");
     porteOptionsForm.classList.add("hidden");
@@ -58,6 +87,88 @@ function updateUIVisibility(eventData) {
 }
 
 //Fonctions imposte
+
+function handleDormantOptions(configData) {
+  const withImposte = configData.porte?.withImposte || false;
+  const dormantSelect = document.getElementById("dormant");
+  const dormantLabel = document.getElementById("label-dormant");
+
+  if (!dormantLabel) return;
+
+  if (withImposte) {
+    dormantLabel.classList.add("hidden");
+    dormantSelect.classList.add("hidden");
+    dormantSelect.value = "false";
+
+    // Forcer la valeur dans la config si nécessaire
+    if (configData.porte && configData.porte.withDormant !== false) {
+      configData.porte.withDormant = false;
+      // Déclencher un événement change pour mettre à jour la config
+      dormantSelect.dispatchEvent(new Event("change"));
+    }
+  } else {
+    // Sans imposte : afficher l'option dormant
+    dormantLabel.classList.remove("hidden");
+    dormantSelect.classList.remove("hidden");
+  }
+  handlePorteHeight(configData);
+}
+
+function handlePorteHeight(configData) {
+  const porteHeightInput = document.querySelector(
+    '[data-config-key="porte.porteHeight"]'
+  );
+
+  if (!porteHeightInput) return;
+
+  const withImposte = configData.porte?.withImposte || false;
+  const withDormant = configData.porte?.withDormant || false;
+  const totalHeight = configData.height || 2500;
+
+  if (!withImposte) {
+    // Sans imposte : hauteur calculée automatiquement
+    let calculatedHeight = totalHeight - 15; // Jeu de 15mm par défaut
+
+    if (withDormant) {
+      calculatedHeight -= 51; // Soustraire 51mm pour le dormant haut
+    }
+
+    // Imposer la valeur et verrouiller
+    porteHeightInput.value = calculatedHeight;
+    porteHeightInput.readOnly = true;
+    porteHeightInput.style.backgroundColor = "#f0f0f0";
+
+    if (configData.porte && configData.porte.porteHeight !== calculatedHeight) {
+      configData.porte.porteHeight = calculatedHeight;
+      // Déclencher une mise à jour de la config sans déclencher une boucle
+      porteHeightInput.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  } else {
+    // Avec imposte : hauteur modifiable par l'utilisateur
+    const maxHeight = totalHeight - 40 - 250 - 51 - 15; // 40 (traverse), 250 (min imposte), 51 (dormant), 15 (jeu)
+
+    porteHeightInput.readOnly = false;
+    porteHeightInput.style.backgroundColor = "";
+    porteHeightInput.min = 500;
+    porteHeightInput.max = maxHeight;
+
+    // Vérifier et ajuster la valeur actuelle si nécessaire
+    const currentValue = parseInt(porteHeightInput.value) || 2200;
+    if (currentValue > maxHeight) {
+      porteHeightInput.value = maxHeight;
+      if (configData.porte) {
+        configData.porte.porteHeight = maxHeight;
+        porteHeightInput.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    } else if (currentValue < 500) {
+      porteHeightInput.value = 500;
+      if (configData.porte) {
+        configData.porte.porteHeight = 500;
+        porteHeightInput.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+  }
+}
 
 // Fonctions modules
 
