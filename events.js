@@ -91,7 +91,7 @@ class ConfigEventManager {
   loadConfig() {
     this.config = this.generateConfigFromForm();
     this.updateConfig(this.config);
-    console.log(this.config);
+    // console.log(this.config);
     return this.config;
   }
 }
@@ -102,6 +102,6 @@ const configManager = new ConfigEventManager();
 // Fonction d'initialisation pour les autres modules
 async function initConfigManager() {
   await configManager.loadConfig();
-  console.log("ConfigManager initialisé avec succès");
+  // console.log("ConfigManager initialisé avec succès");
   return configManager;
 }
