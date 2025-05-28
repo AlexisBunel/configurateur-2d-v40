@@ -57,6 +57,8 @@ function updateUIVisibility(eventData) {
   console.log("Mise à jour de l'interface avec:", configData);
 }
 
+//Fonctions imposte
+
 // Fonctions modules
 
 function calculateModuleWidths(configData) {
@@ -355,7 +357,6 @@ function syncModulesToConfig(configData) {
 }
 
 // Fonctions traverses
-
 // Traverses Verrières
 
 function addTraverse() {
