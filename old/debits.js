@@ -40,44 +40,7 @@ const REFERENCES_DB = {
         conditions: (config) => true,
       },
     },
-
-    PO66: {
-      nom: "Profil Porte Ouvrante 66",
-      description: "Profil pour porte ouvrante",
-      unite: "ml",
-      couleurs: ["noir", "gris", "blanc"],
-      calcul: {
-        quantite: (config) => {
-          if (config.type !== "porte") return 0;
-          // 2 verticaux + 2 horizontaux pour la porte
-          return 4;
-        },
-        longueur: (config) => {
-          if (config.type !== "porte") return 0;
-          // 2 fois hauteur + 2 fois largeur de porte
-          return config.porte.porteHeight * 2 + config.porte.porteWidth * 2;
-        },
-        conditions: (config) => config.type === "porte",
-      },
-    },
-
-    T28: {
-      nom: "Traverse 28",
-      description: "Traverse horizontale 28mm",
-      unite: "ml",
-      couleurs: ["noir", "gris", "blanc"],
-      calcul: {
-        quantite: (config) => {
-          return config.traverses ? config.traverses.length : 0;
-        },
-        longueur: (config) => {
-          if (!config.traverses || config.traverses.length === 0) return 0;
-          return config.width * config.traverses.length;
-        },
-        conditions: (config) => config.traverses && config.traverses.length > 0,
-      },
-    },
-  },
+  }
 
   accessoires: {
     SERROULM: {
@@ -111,50 +74,6 @@ const REFERENCES_DB = {
       },
     },
 
-    BEQUILLE: {
-      nom: "Béquille de porte",
-      description: "Poignée de porte",
-      unite: "u",
-      couleurs: ["noir", "inox"],
-      calcul: {
-        quantite: (config) => (config.type === "porte" ? 1 : 0),
-        conditions: (config) => config.type === "porte",
-      },
-    },
-
-    CHARNIERE_VIS: {
-      nom: "Charnière visible",
-      description: "Charnière standard visible",
-      unite: "u",
-      calcul: {
-        quantite: (config) => {
-          return config.type === "porte" &&
-            config.porte.charniereType === "visible"
-            ? 3
-            : 0;
-        },
-        conditions: (config) =>
-          config.type === "porte" && config.porte.charniereType === "visible",
-      },
-    },
-
-    CHARNIERE_INV: {
-      nom: "Charnière invisible",
-      description: "Charnière dissimulée",
-      unite: "u",
-      calcul: {
-        quantite: (config) => {
-          return config.type === "porte" &&
-            config.porte.charniereType === "invisible"
-            ? 3
-            : 0;
-        },
-        conditions: (config) =>
-          config.type === "porte" && config.porte.charniereType === "invisible",
-      },
-    },
-  },
-
   remplissages: {
     VERRE_6MM: {
       nom: "Verre 6mm",
@@ -182,24 +101,7 @@ const REFERENCES_DB = {
         conditions: (config) => config.options.remplissageEp === 8,
       },
     },
-
-    JOINT_VITRAGE: {
-      nom: "Joint de vitrage",
-      description: "Joint d'étanchéité pour vitrage",
-      unite: "ml",
-      couleurs: ["noir", "transparent", "blanc"],
-      calcul: {
-        quantite: (config) => {
-          // Périmètre total de tous les vitrages
-          // Simplifié: 2*(largeur + hauteur) * nombre de modules
-          const perimetreModule =
-            2 * (config.width / config.modulesCount + config.height);
-          return perimetreModule * config.modulesCount;
-        },
-        conditions: (config) => true,
-      },
-    },
-  },
+  }
 };
 
 // Fonction pour calculer toutes les références actives

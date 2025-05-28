@@ -96,12 +96,6 @@ function updateUIVisibility(eventData) {
   const configData = eventData.newConfig;
   const oldConfig = eventData.oldConfig;
 
-  console.log("🔄 updateUIVisibility appelée avec:", {
-    modulesCount: configData.modulesCount,
-    type: configData.type,
-    hasPorte: !!configData.porte,
-  });
-
   updateModulesCountOptions(configData);
   updatePorteIndexOptions(configData);
 
@@ -124,18 +118,14 @@ function updateUIVisibility(eventData) {
   const indexPorte = document.getElementById("modulePorte");
 
   if (configData.type === "porte") {
-    console.log("📋 Affichage des formulaires porte");
     porteForm.classList.remove("hidden");
     porteOptionsForm.classList.remove("hidden");
     traversesPorteForm.classList.remove("hidden");
     labelModulePorte.classList.remove("hidden");
     indexPorte.classList.remove("hidden");
     handleDormantOptions(configData);
-
-    console.log("🚪 Appel de handleSingleModulePorte");
-    handleSingleModulePorte(configData); // ← VÉRIFIER QUE CETTE LIGNE EST BIEN LÀ
+    handleSingleModulePorte(configData);
   } else {
-    console.log("📋 Masquage des formulaires porte");
     porteForm.classList.add("hidden");
     porteOptionsForm.classList.add("hidden");
     traversesPorteForm.classList.add("hidden");
@@ -364,20 +354,11 @@ function updatePorteIndexOptions(configData) {
 }
 
 function handleSingleModulePorte(configData) {
-  // DEBUG: Afficher les conditions
-  console.log("=== DEBUG handleSingleModulePorte ===");
-  console.log("modulesCount:", configData.modulesCount);
-  console.log("type:", configData.type);
-  console.log("porte:", configData.porte);
-
   // Vérifier si nous avons un seul module avec une porte
   if (Number(configData.modulesCount) !== 1 || configData.type !== "porte") {
-    console.log("❌ Conditions non remplies - sortie de la fonction");
     unlockPorteInputs();
     return;
   }
-
-  console.log("✅ Conditions remplies - traitement du module unique");
 
   const width = configData.width || 4000;
   const withTierce = configData.porte?.withTierce || false;
@@ -394,12 +375,7 @@ function handleSingleModulePorte(configData) {
     '[data-config-key="porte.tierceWidth"]'
   );
 
-  console.log("porteWidthInput trouvé:", !!porteWidthInput);
-  console.log("tierceWidthInput trouvé:", !!tierceWidthInput);
-
   if (!withTierce) {
-    console.log("🚪 CAS 1: Porte seule (sans tierce)");
-
     // Largeur de porte imposée = largeur totale - profils - charnières
     let porteWidth;
     if (charniereType === "visible") {
@@ -407,12 +383,8 @@ function handleSingleModulePorte(configData) {
     } else {
       porteWidth = width - 102 - 6; // 102 = profils, 6 = charnières invisibles
     }
-
-    console.log("porteWidth calculée:", porteWidth);
-
     // Verrouiller l'input de largeur de porte
     if (porteWidthInput) {
-      console.log("✅ Mise à jour de porteWidthInput");
       porteWidthInput.value = porteWidth;
       porteWidthInput.readOnly = true;
       porteWidthInput.style.backgroundColor = "#f0f0f0";
@@ -424,14 +396,9 @@ function handleSingleModulePorte(configData) {
     // S'assurer que la config est mise à jour
     if (configData.porte) {
       configData.porte.porteWidth = porteWidth;
-      console.log("✅ Config mise à jour:", configData.porte.porteWidth);
     }
   } else {
-    console.log("🚪🔧 CAS 2: Porte avec tierce");
-
     const currentPorteWidth = configData.porte?.porteWidth || 730;
-    console.log("currentPorteWidth:", currentPorteWidth);
-
     // Calculer les limites pour la largeur de porte
     let minPorteWidth, maxPorteWidth, tierceWidth;
 
@@ -446,19 +413,12 @@ function handleSingleModulePorte(configData) {
       maxPorteWidth = availableWidth - 200; // 200 = largeur mini tierce
       tierceWidth = availableWidth - currentPorteWidth;
     }
-
-    console.log("minPorteWidth:", minPorteWidth);
-    console.log("maxPorteWidth:", maxPorteWidth);
-    console.log("tierceWidth calculée:", tierceWidth);
-
     // Ajuster la largeur de porte si nécessaire
     let adjustedPorteWidth = currentPorteWidth;
     if (currentPorteWidth < minPorteWidth) {
       adjustedPorteWidth = minPorteWidth;
-      console.log("⚠️ Ajustement: porteWidth trop petite");
     } else if (currentPorteWidth > maxPorteWidth) {
       adjustedPorteWidth = maxPorteWidth;
-      console.log("⚠️ Ajustement: porteWidth trop grande");
     }
 
     // Recalculer la largeur de tierce
@@ -468,12 +428,8 @@ function handleSingleModulePorte(configData) {
       tierceWidth = width - 51 - 51 - 11 - adjustedPorteWidth;
     }
 
-    console.log("adjustedPorteWidth final:", adjustedPorteWidth);
-    console.log("tierceWidth finale:", tierceWidth);
-
     // Mettre à jour les inputs
     if (porteWidthInput) {
-      console.log("✅ Mise à jour de porteWidthInput (avec tierce)");
       porteWidthInput.value = adjustedPorteWidth;
       porteWidthInput.min = minPorteWidth;
       porteWidthInput.max = maxPorteWidth;
@@ -485,7 +441,6 @@ function handleSingleModulePorte(configData) {
     }
 
     if (tierceWidthInput) {
-      console.log("✅ Mise à jour de tierceWidthInput");
       tierceWidthInput.value = tierceWidth;
       tierceWidthInput.readOnly = true;
       tierceWidthInput.style.backgroundColor = "#f0f0f0";
@@ -498,14 +453,8 @@ function handleSingleModulePorte(configData) {
     if (configData.porte) {
       configData.porte.porteWidth = adjustedPorteWidth;
       configData.porte.tierceWidth = tierceWidth;
-      console.log("✅ Config mise à jour:", {
-        porteWidth: configData.porte.porteWidth,
-        tierceWidth: configData.porte.tierceWidth,
-      });
     }
   }
-
-  console.log("=== FIN DEBUG handleSingleModulePorte ===");
 }
 
 function unlockPorteInputs() {
