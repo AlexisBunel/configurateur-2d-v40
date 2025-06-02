@@ -232,20 +232,17 @@ function handlePorteHeight(configData) {
   updateDimensionsOuverture(configData);
 }
 
-function updateDimensionsOuverture(config) {
-  const displayElement = document.getElementById("dimensions-ouverture");
-  if (!displayElement) return;
-
+function calculateDimensionsOuverture(config) {
   let hauteur, largeur;
 
-  // Calcule de la hauteur
+  // Calcul de la hauteur
   if (config.porte?.withImposte) {
     hauteur = (config.porte?.porteHeight || 0) + 15 + 51;
   } else {
     hauteur = config.height || 0;
   }
 
-  // Calcule de la largeur
+  // Calcul de la largeur
   const porteWidth = config.porte?.porteWidth || 0;
   const charniere = config.porte?.charniereType || "visible";
   const withTierce = config.porte?.withTierce || false;
@@ -258,7 +255,22 @@ function updateDimensionsOuverture(config) {
       porteWidth + tierceWidth + 102 + (charniere === "invisible" ? 11 : 15);
   }
 
-  displayElement.textContent = `Dimensions de l'ouverture : ${hauteur}mm x ${largeur}mm`;
+  return {
+    hauteur,
+    largeur,
+    hasOuverture: config.type === "porte",
+  };
+}
+
+function updateDimensionsOuverture(config) {
+  const displayElement = document.getElementById("dimensions-ouverture");
+  if (!displayElement) return;
+
+  const dimensions = calculateDimensionsOuverture(config);
+
+  displayElement.textContent = `Dimensions de l'ouverture : ${dimensions.hauteur}mm x ${dimensions.largeur}mm`;
+
+  return dimensions;
 }
 
 // Fonctions modules

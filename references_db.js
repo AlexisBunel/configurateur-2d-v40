@@ -15,95 +15,95 @@ const REFERENCES_DB = {
           const porteIndex = config.porteIndex || 1;
           const modulesCount = config.modulesCount || 1;
           const withImposte = config.porte?.withImposte || false;
+          let dimensionsOuverture = null;
 
           // PROFILS CADRES VERTICAUX (gauche et droite)
           let quantiteVerticale = 2; // Par défaut, gauche + droite
 
-          if (hasPorte) {
-            // Si porte sur premier module (index 1) ou dernier module
-            if (porteIndex === 1 || porteIndex === modulesCount) {
-              quantiteVerticale = 1; // Un seul côté a le cadre
-            }
-          }
+          // PROFILS CADRES HORIZONTAUX
+          let quantiteHorizontale = 2;
 
-          if (quantiteVerticale > 0) {
+          if (hasPorte) {
+            dimensionsOuverture = calculateDimensionsOuverture(config);
+
+            if (porteIndex === 1 || porteIndex === modulesCount) {
+              quantiteVerticale = 1;
+            }
+
             variantes.push({
               type: "vertical",
               longueur: hauteur,
               quantite: quantiteVerticale,
-              description: `Profil cadre vertical ${hauteur}mm`,
+              description: `Profil cadre vertical`,
             });
-          }
 
-          // PROFILS CADRES HORIZONTAUX (haut et bas)
-          if (hasPorte && withImposte) {
-            // Avec imposte : profil haut interrompu au niveau de la porte
-            const largeurPorteModule = config.porte?.porteWidth || 730;
-            const largeurTierce = config.porte?.withTierce
-              ? config.porte?.tierceWidth || 350
-              : 0;
-            const largeurOuverture = largeurPorteModule + largeurTierce;
+            if (withImposte) {
+              let longeurGauche = 0;
+              let longeurDroite = 0;
+              let longueurImposte = dimensionsOuverture.largeur - 102;
+              if (porteIndex === 1) {
+                longeurDroite = largeur - dimensionsOuverture.largeur - 40;
+              } else if (porteIndex === modulesCount) {
+                longeurGauche = largeur - dimensionsOuverture.largeur - 40;
+              } else {
+                // Calculer la largeur à gauche de la porte
+                for (let i = 1; i < porteIndex; i++) {
+                  const moduleWidth =
+                    config.modules?.[i - 1]?.width || largeur / modulesCount;
+                  longeurGauche += moduleWidth;
+                }
+                longeurGauche += (porteIndex - 2) * 40;
 
-            // Calculer les longueurs de part et d'autre de l'ouverture
-            let largeurGauche = 0;
-            let largeurDroite = 0;
-
-            // Position de l'ouverture selon l'index de la porte
-            for (let i = 1; i <= modulesCount; i++) {
-              const moduleWidth =
-                config.modules?.[i - 1]?.width || largeur / modulesCount;
-
-              if (i < porteIndex) {
-                largeurGauche += moduleWidth;
-              } else if (i > porteIndex) {
-                largeurDroite += moduleWidth;
+                // Calculer la largeur à droite de la porte
+                for (let i = porteIndex + 1; i <= modulesCount; i++) {
+                  const moduleWidth =
+                    config.modules?.[i - 1]?.width || largeur / modulesCount;
+                  longeurDroite += moduleWidth;
+                }
+                // Ajouter les profils intermédiaires à droite
+                longeurDroite += (modulesCount - porteIndex - 1) * 40;
               }
-            }
+              if (longeurGauche > 0) {
+                variantes.push({
+                  type: "horizontal_haut_gauche",
+                  longueur: longeurGauche,
+                  quantite: 2,
+                  description: `Profil cadre horizontal`,
+                });
+              }
 
-            // Profil haut - partie gauche
-            if (largeurGauche > 0) {
+              if (longeurDroite > 0) {
+                variantes.push({
+                  type: "horizontal_haut_droite",
+                  longueur: longeurDroite,
+                  quantite: 2,
+                  description: `Profil cadre horizontal`,
+                });
+              }
+
+              // Profil de l'imposte
               variantes.push({
-                type: "horizontal_haut_gauche",
-                longueur: largeurGauche,
+                type: "horizontal_imposte",
+                longueur: longueurImposte,
                 quantite: 1,
-                description: `Profil cadre haut gauche ${largeurGauche}mm (avec imposte)`,
+                description: `Profil cadre imposte`,
               });
             }
-
-            // Profil haut - partie droite
-            if (largeurDroite > 0) {
-              variantes.push({
-                type: "horizontal_haut_droite",
-                longueur: largeurDroite,
-                quantite: 1,
-                description: `Profil cadre haut droite ${largeurDroite}mm (avec imposte)`,
-              });
-            }
-
-            // Profil bas - pleine largeur
-            variantes.push({
-              type: "horizontal_bas",
-              longueur: largeur,
-              quantite: 1,
-              description: `Profil cadre bas ${largeur}mm`,
-            });
           } else {
-            // Sans imposte OU sans porte : profils haut et bas pleine largeur
             variantes.push({
-              type: "horizontal_haut",
-              longueur: largeur,
-              quantite: 1,
-              description: `Profil cadre haut ${largeur}mm`,
+              type: "vertical",
+              longueur: hauteur,
+              quantite: quantiteVerticale,
+              description: `Profil cadre vertical`,
             });
 
             variantes.push({
-              type: "horizontal_bas",
-              longueur: largeur,
-              quantite: 1,
-              description: `Profil cadre bas ${largeur}mm`,
+              type: "horizontal",
+              longueur: largeur - 80,
+              quantite: quantiteHorizontale,
+              description: `Profil cadre vertical`,
             });
           }
-
           return variantes;
         },
         conditions: (config) => true, // Toujours présent
