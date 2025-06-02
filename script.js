@@ -1164,6 +1164,8 @@ function deleteTraversePorte() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   await initConfigManager();
+  initDebitsManager();
+  initRenduManager();
   setupEventListeners();
   configManager.subscribe("configChanged", updateUIVisibility);
   updateUIVisibility({ newConfig: configManager.getConfig() });
