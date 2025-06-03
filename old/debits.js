@@ -1,248 +1,265 @@
-// Base de données des références avec leurs règles de calcul
-const REFERENCES_DB = {
-  profils: {
-    // Profils verticaux
-    PV40: {
-      nom: "Profil Vertical 40",
-      description: "Profil vertical standard",
-      unite: "ml",
-      couleurs: ["noir", "gris", "blanc"],
-      calcul: {
-        // Fonction qui calcule la quantité et longueur basée sur la config
-        quantite: (config) => {
-          // Nombre de profils verticaux = modules + 1
-          return config.modulesCount + 1;
-        },
-        longueur: (config) => {
-          // Hauteur de la verrière
-          return config.height;
-        },
-        conditions: (config) => {
-          // Toujours présent
-          return true;
-        },
-      },
-    },
-
-    PH40: {
-      nom: "Profil Horizontal 40",
-      description: "Profil horizontal standard",
-      unite: "ml",
-      couleurs: ["noir", "gris", "blanc"],
-      calcul: {
-        quantite: (config) => {
-          // 2 profils horizontaux (haut et bas)
-          return 2;
-        },
-        longueur: (config) => {
-          return config.width;
-        },
-        conditions: (config) => true,
-      },
-    },
+class DebitsManager {
+  constructor() {
+    this.debits = {
+      profils: [],
+      accessoires: [],
+      remplissages: [],
+    };
   }
 
-  accessoires: {
-    SERROULM: {
-      nom: "Serrure à rouleau seul",
-      description: "Mécanisme de fermeture standard",
-      unite: "u",
-      calcul: {
-        quantite: (config) => {
-          return config.type === "porte" && config.porte.serrure === "SERROULM"
-            ? 1
-            : 0;
-        },
-        conditions: (config) =>
-          config.type === "porte" && config.porte.serrure === "SERROULM",
-      },
-    },
+  // Calcule tous les débits selon la configuration
+  calculateDebits(config) {
+    try {
+      console.log("🎯 DebitsManager - Début calcul avec config:", config);
 
-    SERROULPENM: {
-      nom: "Serrure rouleau + pêne + 1/2 cylindre",
-      description: "Mécanisme de fermeture renforcé",
-      unite: "u",
-      calcul: {
-        quantite: (config) => {
-          return config.type === "porte" &&
-            config.porte.serrure === "SERROULPENM"
-            ? 1
-            : 0;
-        },
-        conditions: (config) =>
-          config.type === "porte" && config.porte.serrure === "SERROULPENM",
-      },
-    },
+      // REGÉNÉRER la config depuis le DOM pour être sûr d'avoir les dernières valeurs
+      if (
+        typeof configManager !== "undefined" &&
+        configManager.generateConfigFromForm
+      ) {
+        console.log("🔄 Régénération complète de la config depuis le DOM...");
+        const freshConfig = configManager.generateConfigFromForm();
+        console.log("✅ Config fraîche:", freshConfig);
 
-  remplissages: {
-    VERRE_6MM: {
-      nom: "Verre 6mm",
-      description: "Panneau de verre standard 6mm",
-      unite: "m²",
-      calcul: {
-        quantite: (config) => {
-          // Calcule la surface totale
-          const surfaceTotale = (config.width * config.height) / 1000000; // conversion mm² vers m²
-          return Math.round(surfaceTotale * 100) / 100; // arrondi à 2 décimales
-        },
-        conditions: (config) => config.options.remplissageEp === 6,
-      },
-    },
-
-    VERRE_8MM: {
-      nom: "Verre 8mm",
-      description: "Panneau de verre renforcé 8mm",
-      unite: "m²",
-      calcul: {
-        quantite: (config) => {
-          const surfaceTotale = (config.width * config.height) / 1000000;
-          return Math.round(surfaceTotale * 100) / 100;
-        },
-        conditions: (config) => config.options.remplissageEp === 8,
-      },
-    },
-  }
-};
-
-// Fonction pour calculer toutes les références actives
-function calculateActiveReferences(config) {
-  const activeRefs = {
-    profils: [],
-    accessoires: [],
-    remplissages: [],
-  };
-
-  // Parcourt chaque catégorie
-  Object.keys(REFERENCES_DB).forEach((categorie) => {
-    Object.entries(REFERENCES_DB[categorie]).forEach(([code, reference]) => {
-      // Vérifie si la référence doit être incluse
-      if (reference.calcul.conditions(config)) {
-        const quantite = reference.calcul.quantite(config);
-        const longueur = reference.calcul.longueur
-          ? reference.calcul.longueur(config)
-          : null;
-
-        // N'inclut que si quantité > 0
-        if (quantite > 0) {
-          activeRefs[categorie].push({
-            code,
-            nom: reference.nom,
-            description: reference.description,
-            unite: reference.unite,
-            quantite,
-            longueur: longueur,
-            longueurTotale: longueur ? quantite * longueur : null,
-            couleur: getSelectedColor(reference, config),
-            reference: reference, // Garde la référence complète pour le SVG
-          });
-        }
+        // Utiliser la config fraîche pour les calculs
+        config = freshConfig;
       }
-    });
-  });
 
-  return activeRefs;
-}
+      // FORCER LA SYNCHRONISATION DES MODULES AVANT CALCUL
+      if (typeof syncModulesToConfig === "function") {
+        console.log("🔄 Synchronisation des modules...");
+        syncModulesToConfig(config);
+        console.log("✅ Modules après sync:", config.modules);
+      } else if (typeof syncModulesFromDOM === "function") {
+        console.log("🔄 Synchronisation depuis DOM...");
+        syncModulesFromDOM(config);
+        console.log("✅ Modules après sync DOM:", config.modules);
+      } else {
+        console.warn("⚠️ Aucune fonction de synchronisation disponible");
+      }
 
-// Fonction pour déterminer la couleur sélectionnée
-function getSelectedColor(reference, config) {
-  if (!reference.couleurs) return null;
+      // Utiliser la fonction de references_db.js pour récupérer les éléments actifs
+      const activeReferences = getActiveReferences(config);
 
-  // Logique pour déterminer la couleur selon le type de produit
-  if (reference.nom.includes("Profil")) {
-    return config.options.colorProfile;
-  } else if (reference.nom.includes("Béquille")) {
-    return config.porte?.colorBequille || "noir";
-  } else if (reference.nom.includes("Joint")) {
-    return config.options.colorJoint;
+      this.debits = {
+        profils: activeReferences.profils,
+        accessoires: activeReferences.accessoires,
+        remplissages: activeReferences.remplissages,
+      };
+
+      console.log("Débits calculés:", this.debits);
+      return this.debits;
+    } catch (error) {
+      console.error("Erreur lors du calcul des débits:", error);
+      // Retourner des tableaux vides en cas d'erreur
+      this.debits = {
+        profils: [],
+        accessoires: [],
+        remplissages: [],
+      };
+      return this.debits;
+    }
   }
 
-  return reference.couleurs[0]; // Couleur par défaut
-}
+  // Met à jour l'affichage des tableaux dans le DOM
+  updateTables() {
+    this.updateProfilsTable();
+    this.updateAccessoiresTable();
+    this.updateRemplissageTable();
+  }
 
-// Fonction pour générer les tableaux HTML
-function generateTables(activeRefs) {
-  const container =
-    document.getElementById("tables-container") || createTablesContainer();
-  container.innerHTML = "";
-
-  Object.entries(activeRefs).forEach(([categorie, references]) => {
-    if (references.length > 0) {
-      const table = createTable(categorie, references);
-      container.appendChild(table);
+  // Affiche le tableau des profils
+  updateProfilsTable() {
+    const table = document.getElementById("profiles");
+    if (!table) {
+      console.warn("Table 'profiles' non trouvée");
+      return;
     }
-  });
-}
 
-// Crée le conteneur des tableaux s'il n'existe pas
-function createTablesContainer() {
-  const container = document.createElement("div");
-  container.id = "tables-container";
-  container.style.cssText =
-    "margin: 20px; padding: 20px; border: 1px solid #ccc;";
-  document.body.appendChild(container);
-  return container;
-}
+    // Vider le tableau
+    table.innerHTML = "";
 
-// Crée un tableau pour une catégorie
-function createTable(categorie, references) {
-  const section = document.createElement("section");
-  section.innerHTML = `
-    <h3>${categorie.charAt(0).toUpperCase() + categorie.slice(1)}</h3>
-    <table border="1" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
+    if (this.debits.profils.length === 0) {
+      table.innerHTML = "<caption>Aucun profil à afficher</caption>";
+      return;
+    }
+
+    // Créer l'en-tête du tableau
+    const header = `
+      <caption>PROFILS</caption>
+      <thead>
+        <tr>
+          <th>Référence</th>
+          <th>Description</th>
+          <th>Longueur (mm)</th>
+          <th>Quantité</th>
+          <th>Finition</th>
+        </tr>
+      </thead>
+    `;
+
+    // Créer le corps du tableau
+    let tbody = "<tbody>";
+
+    this.debits.profils.forEach((profil) => {
+      tbody += `
+        <tr>
+          <td>${profil.codeBase}</td>
+          <td>${profil.description}</td>
+          <td>${profil.longueur || "-"}</td>
+          <td>${profil.quantite}</td>
+          <td>${this.getColorLabel(profil.couleur)}</td>
+        </tr>
+      `;
+    });
+
+    tbody += "</tbody>";
+
+    table.innerHTML = header + tbody;
+  }
+
+  // Affiche le tableau des accessoires
+  updateAccessoiresTable() {
+    const table = document.getElementById("accessoires");
+    if (!table) {
+      console.warn("Table 'accessoires' non trouvée");
+      return;
+    }
+
+    // Vider le tableau
+    table.innerHTML = "";
+
+    if (this.debits.accessoires.length === 0) {
+      table.innerHTML = "<caption>Aucun accessoire à afficher</caption>";
+      return;
+    }
+
+    // Créer l'en-tête du tableau
+    const header = `
+      <caption>ACCESSOIRES</caption>
       <thead>
         <tr>
           <th>Code</th>
-          <th>Désignation</th>
+          <th>Nom</th>
+          <th>Description</th>
           <th>Quantité</th>
-          <th>Unité</th>
-          ${
-            references[0].longueur !== null
-              ? "<th>Longueur unitaire (mm)</th><th>Longueur totale (mm)</th>"
-              : ""
-          }
           <th>Couleur</th>
         </tr>
       </thead>
-      <tbody>
-        ${references
-          .map(
-            (ref) => `
-          <tr>
-            <td>${ref.code}</td>
-            <td>${ref.nom}</td>
-            <td>${ref.quantite}</td>
-            <td>${ref.unite}</td>
-            ${
-              ref.longueur !== null
-                ? `<td>${ref.longueur}</td><td>${ref.longueurTotale}</td>`
-                : ""
-            }
-            <td>${ref.couleur || "-"}</td>
-          </tr>
-        `
-          )
-          .join("")}
-      </tbody>
-    </table>
-  `;
+    `;
 
-  return section;
+    // Créer le corps du tableau
+    let tbody = "<tbody>";
+
+    this.debits.accessoires.forEach((accessoire) => {
+      tbody += `
+        <tr>
+          <td>${accessoire.code}</td>
+          <td>${accessoire.nom}</td>
+          <td>${accessoire.description}</td>
+          <td>${accessoire.quantite}</td>
+          <td>${this.getColorLabel(accessoire.couleur)}</td>
+        </tr>
+      `;
+    });
+
+    tbody += "</tbody>";
+
+    table.innerHTML = header + tbody;
+  }
+
+  // Affiche le tableau des remplissages
+  updateRemplissageTable() {
+    const table = document.getElementById("remplissage");
+    if (!table) {
+      console.warn("Table 'remplissage' non trouvée");
+      return;
+    }
+
+    // Vider le tableau
+    table.innerHTML = "";
+
+    if (this.debits.remplissages.length === 0) {
+      table.innerHTML = "<caption>Aucun remplissage à afficher</caption>";
+      return;
+    }
+
+    // Créer l'en-tête du tableau
+    const header = `
+      <caption>REMPLISSAGES</caption>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Nom</th>
+          <th>Description</th>
+          <th>Dimensions</th>
+          <th>Quantité</th>
+          <th>Épaisseur</th>
+        </tr>
+      </thead>
+    `;
+
+    // Créer le corps du tableau
+    let tbody = "<tbody>";
+
+    this.debits.remplissages.forEach((remplissage) => {
+      tbody += `
+        <tr>
+          <td>${remplissage.code}</td>
+          <td>${remplissage.nom}</td>
+          <td>${remplissage.description}</td>
+          <td>${remplissage.dimensions || "-"}</td>
+          <td>${remplissage.quantite}</td>
+          <td>${remplissage.epaisseur || "-"}</td>
+        </tr>
+      `;
+    });
+
+    tbody += "</tbody>";
+
+    table.innerHTML = header + tbody;
+  }
+
+  // Convertit le code couleur en libellé lisible
+  getColorLabel(colorCode) {
+    const colorLabels = {
+      noir: "Laqué noir RAL 9005",
+      gris: "Laqué gris RAL 7016",
+      blanc: "Laqué blanc RAL 9003",
+    };
+
+    return colorLabels[colorCode] || colorCode;
+  }
+
+  // Méthode appelée quand la configuration change
+  onConfigChanged(eventData) {
+    const config = eventData.newConfig;
+    console.log("Configuration mise à jour, recalcul des débits...");
+
+    // Recalculer les débits
+    this.calculateDebits(config);
+
+    // Mettre à jour l'affichage
+    this.updateTables();
+  }
 }
 
-// Fonction principale à appeler lors des changements de config
-function updateReferencesAndTables() {
-  const activeRefs = calculateActiveReferences(config);
-  generateTables(activeRefs);
-  console.log("Références actives:", activeRefs);
-  return activeRefs;
+// Instance globale du gestionnaire de débits
+const debitsManager = new DebitsManager();
+
+// Fonction d'initialisation pour connecter avec le gestionnaire de config
+function initDebitsManager() {
+  // S'abonner aux changements de configuration
+  configManager.subscribe("configChanged", (eventData) => {
+    debitsManager.onConfigChanged(eventData);
+  });
+
+  // Calculer les débits initiaux
+  const currentConfig = configManager.getConfig();
+  if (currentConfig) {
+    debitsManager.calculateDebits(currentConfig);
+    debitsManager.updateTables();
+  }
+
+  console.log("DebitsManager initialisé avec succès");
 }
-
-// Hook dans le système de mise à jour de config existant
-const originalUpdateConfigForTables = updateConfig;
-updateConfig = function (key, value, inputElement) {
-  // Appelle la fonction originale
-  originalUpdateConfigForTables(key, value, inputElement);
-
-  // Met à jour les tableaux
-  updateReferencesAndTables();
-};

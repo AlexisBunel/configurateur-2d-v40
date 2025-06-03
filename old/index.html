@@ -59,12 +59,27 @@
         <form id="configuration-porte">
           <h3>Porte</h3>
           <label for="tierce">Avec une porte tierce :</label>
-          <select name="tierce" id="tierce" data-config-key="withTierce">
+          <select name="tierce" id="tierce" data-config-key="porte.withTierce">
             <option value="false" selected>Non</option>
             <option value="true">Oui</option>
           </select>
           <label for="imposte">Porte avec imposte :</label>
-          <select name="imposte" id="imposte" data-config-key="withImposte">
+          <select
+            name="imposte"
+            id="imposte"
+            data-config-key="porte.withImposte"
+          >
+            <option value="false" selected>Non</option>
+            <option value="true">Oui</option>
+          </select>
+          <label id="label-dormant" for="dormant"
+            >Porte avec dormant haut :</label
+          >
+          <select
+            name="dormant"
+            id="dormant"
+            data-config-key="porte.withDormant"
+          >
             <option value="false" selected>Non</option>
             <option value="true">Oui</option>
           </select>
@@ -72,7 +87,7 @@
           <select
             name="charniere"
             id="charniere"
-            data-config-key="charniereType"
+            data-config-key="porte.charniereType"
           >
             <option value="visible" selected>Visible</option>
             <option value="invisible">Invisible</option>
@@ -81,7 +96,7 @@
             >Largeur de la porte (mm) :
             <input
               type="number"
-              data-config-key="porteWidth"
+              data-config-key="porte.porteWidth"
               value="730"
               min="400"
               max="1230"
@@ -90,7 +105,7 @@
             >Largeur de la tierce (mm) :
             <input
               type="number"
-              data-config-key="tierceWidth"
+              data-config-key="porte.tierceWidth"
               value="350"
               min="300"
               max="1230"
@@ -99,11 +114,12 @@
             >Hauteur de la porte (mm) :
             <input
               type="number"
-              data-config-key="porteHeight"
+              data-config-key="porte.porteHeight"
               value="2200"
               min="500"
               max="4000"
           /></label>
+          <p id="dimensions-ouverture">Dimensions de l'ouverture :</p>
         </form>
         <form id="configuration-modules">
           <h3>Modules</h3>
@@ -113,10 +129,7 @@
             id="modulesCount"
             data-config-key="modulesCount"
           >
-            <option value="2">2</option>
-            <option value="3">3</option>
             <option value="4" selected>4</option>
-            <option value="5">5</option>
           </select>
           <label id="label-modulePorte" for="modulePorte"
             >Emplacement de la porte :</label
@@ -125,7 +138,9 @@
             name="modulePorte"
             id="modulePorte"
             data-config-key="porteIndex"
-          ></select>
+          >
+            <option value="3" selected>3</option>
+          </select>
           <label>Largeur des modules (clair de vitrage) :</label>
           <button id="reset-btn" type="button" style="width: fit-content">
             Réinitialiser
@@ -148,12 +163,12 @@
           <select
             name="type-traverses"
             id="type-traverses"
-            data-config-key="traverseType"
+            data-config-key="porte.traverseType"
           >
             <option value="28" selected>28</option>
             <option value="37">37</option>
           </select>
-          <label for="traverse-tierce">Traverses sur tierce :</label>
+          <!-- <label for="porte.traverse-tierce">Traverses sur tierce :</label>
           <select
             name="traverse-tierce"
             id="traverse-tierce"
@@ -161,7 +176,7 @@
           >
             <option value="false" selected>Non</option>
             <option value="true">Oui</option>
-          </select>
+          </select> -->
           <button id="add-traverse-porte" type="button">
             Ajouter une traverse
           </button>
@@ -182,7 +197,7 @@
           <select
             name="color-profile"
             id="color-profile"
-            data-config-key="colorProfile"
+            data-config-key="options.colorProfile"
           >
             <option value="noir" selected>Laqué noir RAL 9005 granité</option>
             <option value="gris">Laqué gris RAL 7016 granité</option>
@@ -192,7 +207,7 @@
           <select
             name="ep-remplissage"
             id="ep-remplissage"
-            data-config-key="remplissageEp"
+            data-config-key="options.remplissageEp"
           >
             <option value="6" selected>6mm</option>
             <option value="8">8mm</option>
@@ -201,7 +216,7 @@
           <select
             name="color-joint"
             id="color-joint"
-            data-config-key="colorJoint"
+            data-config-key="options.colorJoint"
           >
             <option value="noir" selected>Noir</option>
             <option value="transp">Transparent</option>
@@ -214,13 +229,13 @@
           <select
             name="sens-ouverture"
             id="sens-ouverture"
-            data-config-key="sensOuverture"
+            data-config-key="porte.sensOuverture"
           >
             <option value="droit" selected>Poussant droit</option>
             <option value="gauche">Poussant gauche</option>
           </select>
           <label for="serrure">Serrure :</label>
-          <select name="serrure" id="serrure" data-config-key="serrure">
+          <select name="serrure" id="serrure" data-config-key="porte.serrure">
             <option value="SERROULM" selected>SERROULM - Rouleau seul</option>
             <option value="SERROULPENM">
               SERROULPENM - Rouleau + Pêne + 1/2 cylindre
@@ -233,7 +248,7 @@
           <select
             name="po66-profile"
             id="po66-profile"
-            data-config-key="profile"
+            data-config-key="porte.profile"
           >
             <option value="po66" selected>
               PO66 - Profil Porte Ouvrante 66
@@ -246,7 +261,7 @@
           <select
             name="color-bequille"
             id="color-bequille"
-            data-config-key="colorBequille"
+            data-config-key="porte.colorBequille"
           >
             <option value="noir" selected>Noir</option>
             <option value="inox">Inox</option>
@@ -255,7 +270,7 @@
           <select
             name="color-pvitrage"
             id="color-pvitrage"
-            data-config-key="colorPvitrage"
+            data-config-key="porte.colorPvitrage"
           >
             <option value="noir" selected>Noir</option>
             <option value="transp">Transparent</option>
@@ -268,6 +283,10 @@
       <table id="accessoires"></table>
       <table id="remplissage"></table>
     </section>
+    <script src="events.js"></script>
+    <script src="references_db.js"></script>
+    <script src="debits.js"></script>
+    <script src="rendu.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
