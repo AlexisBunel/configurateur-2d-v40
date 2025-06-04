@@ -179,17 +179,62 @@ export class AppState {
       }
     });
 
-    return config;
+    return this._ensureCorrectTypes(config);
+  }
+
+  _ensureCorrectTypes(config) {
+    const corrected = { ...config };
+
+    // Numbers obligatoires
+    const numberFields = {
+      width: 4000,
+      height: 2500,
+      modulesCount: 1,
+      porteIndex: 1,
+    };
+
+    Object.entries(numberFields).forEach(([key, defaultValue]) => {
+      if (typeof corrected[key] !== "number") {
+        const converted = parseInt(corrected[key], 10);
+        corrected[key] = isNaN(converted) ? defaultValue : converted;
+      }
+    });
+
+    // Porte numbers
+    if (corrected.porte) {
+      const porteNumbers = {
+        porteWidth: 730,
+        tierceWidth: 350,
+        porteHeight: 2200,
+      };
+
+      Object.entries(porteNumbers).forEach(([key, defaultValue]) => {
+        if (typeof corrected.porte[key] !== "number") {
+          const converted = parseInt(corrected.porte[key], 10);
+          corrected.porte[key] = isNaN(converted) ? defaultValue : converted;
+        }
+      });
+    }
+
+    // Options numbers
+    if (corrected.options) {
+      if (typeof corrected.options.remplissageEp !== "number") {
+        const converted = parseInt(corrected.options.remplissageEp, 10);
+        corrected.options.remplissageEp = isNaN(converted) ? 6 : converted;
+      }
+    }
+
+    return corrected;
   }
 
   /**
    * Extrait la valeur d'un input selon son type
    */
   _extractInputValue(input) {
-    const { type, value, checked } = input;
+    const { type, value, checked, name } = input;
 
     if (type === "radio") {
-      return checked ? value : undefined;
+      return checked ? this._convertValue(value, name) : undefined;
     }
 
     if (type === "checkbox") {
@@ -197,13 +242,49 @@ export class AppState {
     }
 
     if (type === "number") {
-      return parseInt(value, 10) || 0;
+      const numValue = parseInt(value, 10);
+      return isNaN(numValue) ? 0 : numValue;
     }
 
     // Conversion des strings boolean
     if (value === "true") return true;
     if (value === "false") return false;
+    return this._convertValue(value, input.getAttribute("data-config-key"));
+  }
 
+  /**
+   * Convertit une valeur selon le contexte
+   */
+  _convertValue(value, configKey) {
+    // Champs qui doivent être des numbers
+    const numberFields = [
+      "width",
+      "height",
+      "modulesCount",
+      "porteIndex",
+      "porte.porteWidth",
+      "porte.tierceWidth",
+      "porte.porteHeight",
+      "options.remplissageEp",
+    ];
+
+    if (numberFields.includes(configKey)) {
+      const numValue = parseInt(value, 10);
+      return isNaN(numValue) ? 0 : numValue;
+    }
+
+    // Champs qui doivent être des booleans
+    const booleanFields = [
+      "porte.withTierce",
+      "porte.withImposte",
+      "porte.withDormant",
+    ];
+
+    if (booleanFields.includes(configKey)) {
+      return value === "true" || value === true;
+    }
+
+    // Par défaut, retourner la string
     return value;
   }
 
