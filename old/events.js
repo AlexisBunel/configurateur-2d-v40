@@ -69,20 +69,20 @@ class ConfigEventManager {
         }
       }
 
-      // Gestion des propriétés imbriquées
-      const keys = key.split("."); // ← Sépare "porte.width" en ["porte", "width"]
+      // Gestion des sous-propriétés (ex: "porte.width")
+      const keys = key.split(".");
       let target = config;
 
-      // Navigue jusqu'à l'objet parent
       for (let i = 0; i < keys.length - 1; i++) {
-        if (!target[keys[i]]) {
-          target[keys[i]] = {};
+        const currentKey = keys[i];
+        if (!target[currentKey]) {
+          target[currentKey] = {};
         }
-        target = target[keys[i]];
+        target = target[currentKey];
       }
 
-      // Met à jour la valeur finale
-      target[keys[keys.length - 1]] = value;
+      const finalKey = keys[keys.length - 1];
+      target[finalKey] = value;
     });
 
     return config;
@@ -94,6 +94,17 @@ class ConfigEventManager {
     // console.log(this.config);
     return this.config;
   }
+
+  // Écouter automatiquement les changements
+  attachFormListeners() {
+    const inputs = document.querySelectorAll("[data-config-key]");
+
+    inputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        this.generateAndEmitConfigFromForm();
+      });
+    });
+  }
 }
 
 // Instance globale du gestionnaire d'événements
@@ -101,6 +112,14 @@ const configManager = new ConfigEventManager();
 
 // Fonction d'initialisation pour les autres modules
 async function initConfigManager() {
-  await configManager.loadConfig();
-  return configManager;
+  try {
+    await configManager.loadConfig();
+    configManager.attachFormListeners();
+
+    console.log("EventManager initialisé avec succès");
+    return configManager;
+  } catch (error) {
+    console.error("Erreur lors de l'initialisation d'EventManager:", error);
+    throw error;
+  }
 }
