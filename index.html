@@ -166,26 +166,17 @@
             <option value="28" selected>28</option>
             <option value="37">37</option>
           </select>
-          <!-- <label for="porte.traverse-tierce">Traverses sur tierce :</label>
-          <select
-            name="traverse-tierce"
-            id="traverse-tierce"
-            data-config-key="traverseTierce"
-          >
-            <option value="false" selected>Non</option>
-            <option value="true">Oui</option>
-          </select> -->
           <button id="add-traverse-porte" type="button">
             Ajouter une traverse
           </button>
           <select
-            name="list-traverses-tierce"
-            id="list-traverses-tierce"
+            name="list-traverses-porte"
+            id="list-traverses-porte"
             class=""
           >
             <option value="" selected>Sélectionner une traverse</option>
           </select>
-          <button id="delete-traverse-tierce" type="button" class="">
+          <button id="delete-traverse-porte" type="button" class="">
             Supprimer une traverse
           </button>
         </form>
@@ -281,10 +272,6 @@
       <table id="accessoires"></table>
       <table id="remplissage"></table>
     </section>
-    <script src="js/events.js"></script>
-    <script src="js/references_db.js"></script>
-    <script src="js/debits.js"></script>
-    <script src="js/rendu.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module" src="/js/main.js"></script>
   </body>
 </html>

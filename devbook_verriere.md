@@ -2,6 +2,24 @@
 
 **Projet d'apprentissage FullStack** | **Débutant en programmation**
 
+js/
+├── core/
+│ ├── EventBus.js // Système événements centralisé
+│ ├── VerriereConfig.js // Modèle de données pur
+│ └── ConfigValidator.js // Validation des données
+├── services/
+│ ├── ConfigService.js // Gestion état + persistance
+│ ├── CalculationService.js // Calculs métier purs
+│ └── RenderService.js // Rendu SVG
+├── managers/
+│ ├── FormManager.js // Gestion formulaires
+│ ├── TableManager.js // Gestion tableaux
+│ └── UIManager.js // Orchestration UI
+├── data/
+│ ├── References.js // Base données produits
+│ └── DefaultConfig.js // Configuration par défaut
+└── main.js // Point d'entrée + initialisation
+
 ---
 
 ## 🎯 Vue d'ensemble du projet
@@ -432,8 +450,8 @@ const REFERENCES_DB = {
 
 ---
 
-**Date de début** : ****\_\_\_****
-**Date de fin prévue** : ****\_\_\_****
+**Date de début** : \***\*\_\_\_\*\***
+**Date de fin prévue** : \***\*\_\_\_\*\***
 **Temps investi** : **\_** heures
 
 _Conseil_ : Cochez chaque étape et notez vos difficultés pour tracker votre progression ! 🚀
