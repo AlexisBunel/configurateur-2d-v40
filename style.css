@@ -1,86 +1,370 @@
+/* ===== Styles de base ===== */
 * {
   box-sizing: border-box;
 }
 
 body {
-  font-family: sans-serif;
-  background-color: #fcfcfc;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
 }
 
 .hidden {
-  display: none;
+  display: none !important;
+}
+
+/* ===== Layout principal ===== */
+h1 {
+  text-align: center;
+  color: #2c3e50;
+  margin: 20px 0;
+  font-size: 2rem;
+  font-weight: 300;
 }
 
 #configuration {
   display: flex;
-  gap: 20px;
+  gap: 30px;
   margin: 20px;
+  align-items: flex-start;
 }
 
+/* ===== SVG Preview ===== */
 svg {
-  background-color: #eee;
+  background-color: #ffffff;
   width: 900px;
   height: 550px;
   position: sticky;
   top: 20px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
+/* ===== Formulaires ===== */
 #forms {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
   width: 500px;
-  padding-right: 10px;
+  min-width: 450px;
 }
 
 form {
   background-color: white;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
 }
 
-/* Styles pour les tableaux de récapitulatif */
+form:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+form h3 {
+  margin: 0 0 10px 0;
+  color: #495057;
+  font-size: 1.2rem;
+  font-weight: 600;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 8px;
+}
+
+/* ===== Champs de formulaire ===== */
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-weight: 500;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+input,
+select {
+  padding: 10px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background-color: #fff;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+input:hover,
+select:hover {
+  border-color: #6c757d;
+}
+
+/* ===== Options désactivées dans les selects ===== */
+option:disabled {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  font-style: italic;
+}
+
+/* ===== États de validation ===== */
+input.valid {
+  border-color: #28a745;
+  background-color: #f8fff9;
+}
+
+input.error {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.error-message::before {
+  content: "⚠️";
+  font-size: 0.9rem;
+}
+
+/* ===== Champs verrouillés ===== */
+input[readonly] {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+input[readonly]:hover {
+  border-color: #adb5bd;
+}
+
+/* ===== Radio buttons et checkboxes ===== */
+input[type="radio"],
+input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+label:has(input[type="radio"]),
+label:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* ===== Boutons ===== */
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+button[type="submit"],
+button:not(.cancel-btn):not(.secondary) {
+  background-color: #007bff;
+  color: white;
+  margin-bottom: 10px;
+}
+
+button[type="submit"]:hover,
+button:not(.cancel-btn):not(.secondary):hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+button.cancel-btn,
+button.secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+button.cancel-btn:hover,
+button.secondary:hover {
+  background-color: #545b62;
+}
+
+button:disabled {
+  background-color: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+#reset-btn {
+  background-color: #fd7e14;
+  color: white;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  align-self: flex-start;
+}
+
+#reset-btn:hover {
+  background-color: #e66b02;
+}
+
+/* ===== Modules ===== */
+#modules-width {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+#modules-width label {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+#modules-width input {
+  margin-top: 5px;
+  padding: 8px;
+  font-size: 0.9rem;
+}
+
+/* ===== Formulaires de traverses ===== */
+.traverse-form {
+  background-color: #f8f9fa;
+  border: 2px solid #007bff;
+  margin: 15px 0;
+  position: relative;
+}
+
+.traverse-form h4 {
+  margin: 0 0 15px 0;
+  color: #007bff;
+  font-size: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.form-group small {
+  color: #6c757d;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.modules-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.modules-checkboxes label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: normal;
+  margin: 0;
+  min-width: auto;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.form-actions button {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+.error-container {
+  min-height: 20px;
+}
+
+/* ===== Tableaux récapitulatifs ===== */
 #recapitulatif {
   margin: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 25px;
 }
 
 #recapitulatif table {
   width: 100%;
   border-collapse: collapse;
   background-color: white;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 #recapitulatif caption {
-  background-color: #fc0fc0;
+  background: linear-gradient(135deg, #007bff, #0056b3);
   color: white;
-  padding: 12px;
-  font-weight: bold;
-  font-size: 1.1em;
+  padding: 16px 20px;
+  font-weight: 700;
+  font-size: 1.2rem;
   text-align: left;
+  letter-spacing: 0.5px;
 }
 
 #recapitulatif th {
-  background-color: #0fe22b;
+  background-color: #495057;
   color: white;
-  padding: 10px;
+  padding: 12px 15px;
   text-align: left;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 #recapitulatif td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #e0dee6;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 0.9rem;
 }
 
 #recapitulatif tr:hover {
@@ -88,5 +372,125 @@ form {
 }
 
 #recapitulatif tr:nth-child(even) {
-  background-color: #f9f9f9;
+  background-color: #f8f9fa;
+}
+
+#recapitulatif tr:nth-child(even):hover {
+  background-color: #e9ecef;
+}
+
+#total-amount {
+  margin: -10px 0 10px 0;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1400px) {
+  #configuration {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  svg {
+    position: static;
+    margin-bottom: 20px;
+  }
+
+  #forms {
+    width: 100%;
+    max-width: 600px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  #configuration {
+    margin: 10px;
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+    max-width: 700px;
+  }
+
+  form {
+    padding: 15px;
+  }
+
+  #modules-width {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+
+  .modules-checkboxes {
+    gap: 8px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+}
+
+/* ===== Animations et transitions ===== */
+form,
+button,
+input,
+select {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.traverse-form {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Messages d'état ===== */
+#dimensions-ouverture {
+  padding: 10px 15px;
+  background-color: #e7f3ff;
+  border-left: 4px solid #007bff;
+  border-radius: 4px;
+  margin-top: 10px;
+  font-weight: 600;
+  color: #007bff;
+}
+
+/* ===== Focus visible pour accessibilité ===== */
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* ===== Scrollbar personnalisée ===== */
+#forms::-webkit-scrollbar {
+  width: 8px;
+}
+
+#forms::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+#forms::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+#forms::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }

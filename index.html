@@ -2,276 +2,572 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <title>Maquette Configuration Verrière V40</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Configurateur Verrière V40 - Professional</title>
+    <meta
+      name="description"
+      content="Configurateur professionnel pour verrières industrielles V40"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>Configuration verrière V40</h1>
-    <div id="configuration">
-      <svg id="svg-preview" viewBox="0 0 900 550"></svg>
-      <section id="forms">
-        <form id="configuration-dimensions">
-          <h3>Dimensions de la Verrière</h3>
-          <label
-            >Largeur (mm) :
-            <input
-              id="width"
-              type="number"
-              data-config-key="width"
-              value="4000"
-              min="400"
-              max="5000"
-          /></label>
-          <label
-            >Hauteur (mm) :
-            <input
-              id="height"
-              type="number"
-              data-config-key="height"
-              value="2500"
-              min="400"
-              max="5000"
-          /></label>
-        </form>
-        <form id="configuration-type">
-          <h3>Type de verrière</h3>
-          <div>
-            <input
-              type="radio"
-              id="type1"
-              name="type"
-              value="pleine"
-              data-config-key="type"
-              checked
-            />
-            <label for="type1" style="margin-right: 50px">Pleine</label>
+    <header>
+      <h1>Configurateur Verrière V40</h1>
+      <!-- <div class="app-info">
+        <span id="config-status">Configuration par défaut chargée</span>
+        <div class="controls">
+          <button
+            type="button"
+            id="save-config"
+            class="secondary"
+            title="Ctrl+S"
+          >
+            💾 Sauvegarder
+          </button>
+          <button type="button" id="load-config" class="secondary">
+            📂 Charger
+          </button>
+          <button type="button" id="export-config" class="secondary">
+            📤 Exporter
+          </button>
+        </div>
+      </div> -->
+    </header>
 
-            <input
-              type="radio"
-              id="type2"
-              name="type"
-              value="porte"
-              data-config-key="type"
-            />
-            <label for="type2">Avec porte</label>
+    <main id="configuration">
+      <!-- Zone de prévisualisation SVG -->
+      <section class="preview-section">
+        <svg
+          id="svg-preview"
+          viewBox="0 0 900 550"
+          aria-label="Prévisualisation de la verrière"
+        >
+          <defs>
+            <!-- Gradients et patterns pour le rendu -->
+            <linearGradient
+              id="metalGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" style="stop-color: #e0e0e0; stop-opacity: 1" />
+              <stop
+                offset="100%"
+                style="stop-color: #a0a0a0; stop-opacity: 1"
+              />
+            </linearGradient>
+            <pattern
+              id="glassPattern"
+              patternUnits="userSpaceOnUse"
+              width="4"
+              height="4"
+            >
+              <rect width="4" height="4" fill="#f0f8ff" opacity="0.3" />
+            </pattern>
+          </defs>
+          <!-- Le contenu sera généré dynamiquement -->
+        </svg>
+        <div class="preview-info">
+          <p><strong>Échelle automatique</strong> - Rendu temps réel</p>
+          <p id="preview-dimensions">Dimensions: 4000mm × 2500mm</p>
+        </div>
+      </section>
+
+      <!-- Formulaires de configuration -->
+      <section id="forms" role="main">
+        <!-- DIMENSIONS PRINCIPALES -->
+        <form id="configuration-dimensions" autocomplete="off">
+          <h3>Dimensions de la Verrière</h3>
+          <div class="form-grid">
+            <label>
+              Largeur (mm)
+              <input
+                id="width"
+                type="number"
+                data-config-key="width"
+                value="4000"
+                min="400"
+                max="5000"
+                step="1"
+                required
+                aria-describedby="width-help"
+              />
+              <small id="width-help">Entre 400 et 5000mm</small>
+            </label>
+            <label>
+              Hauteur (mm)
+              <input
+                id="height"
+                type="number"
+                data-config-key="height"
+                value="2500"
+                min="400"
+                max="5000"
+                step="1"
+                required
+                aria-describedby="height-help"
+              />
+              <small id="height-help">Entre 400 et 5000mm</small>
+            </label>
           </div>
         </form>
-        <form id="configuration-porte">
-          <h3>Porte</h3>
-          <label for="tierce">Avec une porte tierce :</label>
-          <select name="tierce" id="tierce" data-config-key="porte.withTierce">
-            <option value="false" selected>Non</option>
-            <option value="true">Oui</option>
-          </select>
-          <label for="imposte">Porte avec imposte :</label>
-          <select
-            name="imposte"
-            id="imposte"
-            data-config-key="porte.withImposte"
-          >
-            <option value="false" selected>Non</option>
-            <option value="true">Oui</option>
-          </select>
-          <label id="label-dormant" for="dormant"
-            >Porte avec dormant haut :</label
-          >
-          <select
-            name="dormant"
-            id="dormant"
-            data-config-key="porte.withDormant"
-          >
-            <option value="false" selected>Non</option>
-            <option value="true">Oui</option>
-          </select>
-          <label for="charniere">Type de charnière :</label>
-          <select
-            name="charniere"
-            id="charniere"
-            data-config-key="porte.charniereType"
-          >
-            <option value="visible" selected>Visible</option>
-            <option value="invisible">Invisible</option>
-          </select>
-          <label
-            >Largeur de la porte (mm) :
-            <input
-              type="number"
-              data-config-key="porte.porteWidth"
-              value="730"
-              min="400"
-              max="1230"
-          /></label>
-          <label id="widthTierce"
-            >Largeur de la tierce (mm) :
-            <input
-              type="number"
-              data-config-key="porte.tierceWidth"
-              value="350"
-              min="300"
-              max="1230"
-          /></label>
-          <label
-            >Hauteur de la porte (mm) :
-            <input
-              type="number"
-              data-config-key="porte.porteHeight"
-              value="2200"
-              min="500"
-              max="4000"
-          /></label>
-          <p id="dimensions-ouverture">Dimensions de l'ouverture :</p>
+
+        <!-- TYPE DE VERRIÈRE -->
+        <form id="configuration-type">
+          <h3>Type de Verrière</h3>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input
+                type="radio"
+                id="type-pleine"
+                name="type"
+                value="pleine"
+                data-config-key="type"
+                checked
+              />
+              <span class="radio-custom"></span>
+              Verrière pleine
+              <small>Structure complète sans ouverture</small>
+            </label>
+            <label class="radio-label">
+              <input
+                type="radio"
+                id="type-porte"
+                name="type"
+                value="porte"
+                data-config-key="type"
+              />
+              <span class="radio-custom"></span>
+              Avec porte Battante
+              <small>Intégration d'une porte dans la structure</small>
+            </label>
+          </div>
         </form>
+
+        <!-- CONFIGURATION PORTE -->
+        <form id="configuration-porte" class="hidden">
+          <h3>Configuration de la Porte</h3>
+
+          <div class="form-section">
+            <h4>Options de base</h4>
+            <div class="form-grid">
+              <label>
+                Porte avec tierce
+                <select
+                  name="tierce"
+                  id="tierce"
+                  data-config-key="porte.withTierce"
+                >
+                  <option value="false" selected>Non</option>
+                  <option value="true">Oui</option>
+                </select>
+              </label>
+              <label>
+                Porte avec imposte
+                <select
+                  name="imposte"
+                  id="imposte"
+                  data-config-key="porte.withImposte"
+                >
+                  <option value="false" selected>Non</option>
+                  <option value="true">Oui</option>
+                </select>
+              </label>
+            </div>
+
+            <label id="label-dormant">
+              Porte avec dormant haut
+              <select
+                name="dormant"
+                id="dormant"
+                data-config-key="porte.withDormant"
+              >
+                <option value="false" selected>Non</option>
+                <option value="true">Oui</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-section">
+            <h4>Dimensions</h4>
+            <div class="form-grid">
+              <label>
+                Largeur de la porte (mm)
+                <input
+                  type="number"
+                  data-config-key="porte.porteWidth"
+                  value="730"
+                  min="400"
+                  max="1230"
+                  step="1"
+                  required
+                />
+                <small>Entre 400 et 1230mm</small>
+              </label>
+              <label id="widthTierce" class="hidden">
+                Largeur de la tierce (mm)
+                <input
+                  type="number"
+                  data-config-key="porte.tierceWidth"
+                  value="350"
+                  min="300"
+                  max="1230"
+                  step="1"
+                />
+                <small>Entre 300 et 1230mm</small>
+              </label>
+            </div>
+
+            <label>
+              Hauteur de la porte (mm)
+              <input
+                type="number"
+                data-config-key="porte.porteHeight"
+                value="2200"
+                min="500"
+                max="4000"
+                step="1"
+                required
+              />
+              <small>Calculée automatiquement si sans imposte</small>
+            </label>
+
+            <div id="dimensions-ouverture" class="calculated-field">
+              <!-- Sera rempli dynamiquement -->
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h4>Quincaillerie</h4>
+            <div class="form-grid">
+              <label>
+                Type de charnière
+                <select
+                  name="charniere"
+                  id="charniere"
+                  data-config-key="porte.charniereType"
+                >
+                  <option value="visible" selected>
+                    Visible (+10mm ouverture)
+                  </option>
+                  <option value="invisible">Invisible (+6mm ouverture)</option>
+                </select>
+              </label>
+              <label>
+                Sens d'ouverture
+                <select
+                  name="sens-ouverture"
+                  id="sens-ouverture"
+                  data-config-key="porte.sensOuverture"
+                >
+                  <option value="droit" selected>Poussant droit</option>
+                  <option value="gauche">Poussant gauche</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Serrure
+              <select
+                name="serrure"
+                id="serrure"
+                data-config-key="porte.serrure"
+              >
+                <option value="SERROULM" selected>
+                  SERROULM - Rouleau seul
+                </option>
+                <option value="SERROULPENM">
+                  SERROULPENM - Rouleau + Pêne + 1/2 cylindre
+                </option>
+                <option value="SERPEN35M">
+                  SERPEN35M - Pêne demi-tour + Pêne dormant
+                </option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-section">
+            <h4>Finitions porte</h4>
+            <div class="form-grid">
+              <label>
+                Profil porte
+                <select
+                  name="po66-profile"
+                  id="po66-profile"
+                  data-config-key="porte.profile"
+                >
+                  <option value="po66" selected>
+                    PO66 - Profil Porte Ouvrante 66
+                  </option>
+                  <option value="po6622u">
+                    PO6622U - Profil Porte Ouvrante 66 usiné
+                  </option>
+                </select>
+              </label>
+              <label>
+                Couleur béquille
+                <select
+                  name="color-bequille"
+                  id="color-bequille"
+                  data-config-key="porte.colorBequille"
+                >
+                  <option value="noir" selected>Noir</option>
+                  <option value="inox">Inox</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Couleur joint de vitrage
+              <select
+                name="color-pvitrage"
+                id="color-pvitrage"
+                data-config-key="porte.colorPvitrage"
+              >
+                <option value="noir" selected>Noir</option>
+                <option value="transp">Transparent</option>
+                <option value="blanc">Blanc</option>
+              </select>
+            </label>
+          </div>
+        </form>
+
+        <!-- MODULES -->
         <form id="configuration-modules">
-          <h3>Modules</h3>
-          <label for="modulesCount">Nombre de modules (dont porte) :</label>
-          <select
-            name="modulesCount"
-            id="modulesCount"
-            data-config-key="modulesCount"
-          ></select>
-          <label id="label-modulePorte" for="modulePorte"
-            >Emplacement de la porte :</label
-          >
-          <select
-            name="modulePorte"
-            id="modulePorte"
-            data-config-key="porteIndex"
-          >
-            <option value="3" selected>3</option>
-          </select>
-          <label>Largeur des modules (clair de vitrage) :</label>
-          <button id="reset-btn" type="button" style="width: fit-content">
-            Réinitialiser
-          </button>
-          <div id="modules-width"></div>
+          <h3>Configuration des Modules</h3>
+
+          <div class="form-grid">
+            <label>
+              Nombre de modules
+              <select
+                name="modulesCount"
+                id="modulesCount"
+                data-config-key="modulesCount"
+              >
+                <!-- Options générées dynamiquement -->
+              </select>
+              <small>Calculé selon la largeur totale</small>
+            </label>
+
+            <label id="label-modulePorte" class="hidden">
+              Emplacement de la porte
+              <select
+                name="modulePorte"
+                id="modulePorte"
+                data-config-key="porteIndex"
+                class="hidden"
+              >
+                <option value="1">Module 1</option>
+                <option value="2">Module 2</option>
+                <option value="3" selected>Module 3</option>
+                <option value="4">Module 4</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="modules-section">
+            <div class="section-header">
+              <h4>Largeur des modules (clair de vitrage)</h4>
+              <button
+                id="reset-btn"
+                type="button"
+                title="Répartition équitable"
+              >
+                Réinitialiser
+              </button>
+            </div>
+            <div id="modules-width">
+              <!-- Généré dynamiquement -->
+            </div>
+          </div>
         </form>
+
+        <!-- TRAVERSES PRINCIPALES -->
         <form id="configuration-traverses">
-          <h3>Traverses</h3>
-          <button id="add-traverse" type="button">Ajouter une traverse</button>
-          <select name="list-traverses" id="list-traverses" class="">
-            <option value="" selected>Sélectionner une traverse</option>
-          </select>
-          <button id="delete-traverse" type="button" class="">
-            Supprimer une traverse
-          </button>
+          <h3>Traverses Principales</h3>
+
+          <div class="traverses-controls">
+            <button id="add-traverse" type="button">
+              Ajouter une traverse
+            </button>
+            <div class="traverse-list">
+              <select name="list-traverses" id="list-traverses">
+                <option value="" selected>Sélectionner une traverse</option>
+              </select>
+              <button id="delete-traverse" type="button" class="secondary">
+                Supprimer
+              </button>
+            </div>
+          </div>
         </form>
-        <form id="configuration-traverses-porte">
-          <h3>Traverses sur la porte</h3>
-          <label for="type-traverses">Type de traverse :</label>
-          <select
-            name="type-traverses"
-            id="type-traverses"
-            data-config-key="porte.traverseType"
-          >
-            <option value="28" selected>28</option>
-            <option value="37">37</option>
-          </select>
-          <button id="add-traverse-porte" type="button">
-            Ajouter une traverse
-          </button>
-          <select
-            name="list-traverses-porte"
-            id="list-traverses-porte"
-            class=""
-          >
-            <option value="" selected>Sélectionner une traverse</option>
-          </select>
-          <button id="delete-traverse-porte" type="button" class="">
-            Supprimer une traverse
-          </button>
+
+        <!-- TRAVERSES PORTE -->
+        <form id="configuration-traverses-porte" class="hidden">
+          <h3>Traverses sur la Porte</h3>
+
+          <label>
+            Type de traverse par défaut
+            <select
+              name="type-traverses"
+              id="type-traverses"
+              data-config-key="porte.traverseType"
+            >
+              <option value="28" selected>28mm</option>
+              <option value="37">37mm</option>
+            </select>
+          </label>
+
+          <div class="traverses-controls">
+            <button id="add-traverse-porte" type="button">
+              Ajouter une traverse
+            </button>
+            <div class="traverse-list">
+              <select name="list-traverses-porte" id="list-traverses-porte">
+                <option value="" selected>Sélectionner une traverse</option>
+              </select>
+              <button
+                id="delete-traverse-porte"
+                type="button"
+                class="secondary"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
         </form>
+
+        <!-- OPTIONS GÉNÉRALES -->
         <form id="configuration-options">
-          <h3>Options</h3>
-          <label for="color-profile">Couleur :</label>
-          <select
-            name="color-profile"
-            id="color-profile"
-            data-config-key="options.colorProfile"
-          >
-            <option value="noir" selected>Laqué noir RAL 9005 granité</option>
-            <option value="gris">Laqué gris RAL 7016 granité</option>
-            <option value="blanc">Laqué blanc RAL 9003 granité</option>
-          </select>
-          <label for="ep-remplissage">Remplissage :</label>
-          <select
-            name="ep-remplissage"
-            id="ep-remplissage"
-            data-config-key="options.remplissageEp"
-          >
-            <option value="6" selected>6mm</option>
-            <option value="8">8mm</option>
-          </select>
-          <label for="color-joint">Couleur du joint :</label>
-          <select
-            name="color-joint"
-            id="color-joint"
-            data-config-key="options.colorJoint"
-          >
-            <option value="noir" selected>Noir</option>
-            <option value="transp">Transparent</option>
-            <option value="blanc">Blanc</option>
-          </select>
-        </form>
-        <form id="configuration-options-porte">
-          <h3>Options porte</h3>
-          <label for="sens-ouverture">Sens d'ouverture :</label>
-          <select
-            name="sens-ouverture"
-            id="sens-ouverture"
-            data-config-key="porte.sensOuverture"
-          >
-            <option value="droit" selected>Poussant droit</option>
-            <option value="gauche">Poussant gauche</option>
-          </select>
-          <label for="serrure">Serrure :</label>
-          <select name="serrure" id="serrure" data-config-key="porte.serrure">
-            <option value="SERROULM" selected>SERROULM - Rouleau seul</option>
-            <option value="SERROULPENM">
-              SERROULPENM - Rouleau + Pêne + 1/2 cylindre
-            </option>
-            <option value="SERPEN35M">
-              SERPEN35M - Pêne demi-tour + Pêne dormant
-            </option>
-          </select>
-          <label for="po66-profile">Profil :</label>
-          <select
-            name="po66-profile"
-            id="po66-profile"
-            data-config-key="porte.profile"
-          >
-            <option value="po66" selected>
-              PO66 - Profil Porte Ouvrante 66
-            </option>
-            <option value="po6622u">
-              PO6622U - Profil Porte Ouvrante 66 usiné
-            </option>
-          </select>
-          <label for="color-bequille">Couleur béquille :</label>
-          <select
-            name="color-bequille"
-            id="color-bequille"
-            data-config-key="porte.colorBequille"
-          >
-            <option value="noir" selected>Noir</option>
-            <option value="inox">Inox</option>
-          </select>
-          <label for="color-pvitrage">Couleur joint de vitrage :</label>
-          <select
-            name="color-pvitrage"
-            id="color-pvitrage"
-            data-config-key="porte.colorPvitrage"
-          >
-            <option value="noir" selected>Noir</option>
-            <option value="transp">Transparent</option>
-          </select>
+          <h3>Options de Finition</h3>
+
+          <div class="form-grid">
+            <label>
+              Couleur structure
+              <select
+                name="color-profile"
+                id="color-profile"
+                data-config-key="options.colorProfile"
+              >
+                <option value="noir" selected>
+                  Laqué noir RAL 9005 granité
+                </option>
+                <option value="gris">Laqué gris RAL 7016 granité</option>
+                <option value="blanc">Laqué blanc RAL 9003 granité</option>
+              </select>
+            </label>
+
+            <label>
+              Épaisseur remplissage
+              <select
+                name="ep-remplissage"
+                id="ep-remplissage"
+                data-config-key="options.remplissageEp"
+              >
+                <option value="6" selected>6mm</option>
+                <option value="8">8mm</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            Couleur des joints
+            <select
+              name="color-joint"
+              id="color-joint"
+              data-config-key="options.colorJoint"
+            >
+              <option value="noir" selected>Noir</option>
+              <option value="transp">Transparent</option>
+              <option value="blanc">Blanc</option>
+            </select>
+          </label>
         </form>
       </section>
-    </div>
-    <section id="recapitulatif">
-      <table id="profiles"></table>
-      <table id="accessoires"></table>
-      <table id="remplissage"></table>
+    </main>
+
+    <!-- RÉCAPITULATIFS -->
+    <section id="recapitulatif" role="complementary">
+      <h2>Récapitulatifs</h2>
+
+      <table id="profiles">
+        <caption>
+          Profils
+        </caption>
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Désignation</th>
+            <th>Finition</th>
+            <th>Longueur</th>
+            <th>Qté</th>
+            <th>Prix unit.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" class="empty-state">Configuration en cours...</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table id="accessoires">
+        <caption>
+          Accessoires
+        </caption>
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Désignation</th>
+            <th>Qté</th>
+            <th>Finition</th>
+            <th>Prix unit.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="6" class="empty-state">Configuration en cours...</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table id="remplissage">
+        <caption>
+          Remplissage
+        </caption>
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Désignation</th>
+            <th>Épaisseur</th>
+            <th>Dimensions</th>
+            <th>Surface</th>
+            <th>Prix unit.</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" class="empty-state">Configuration en cours...</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="total-section">
+        <div class="total-summary">
+          <h3>Total Général</h3>
+          <div class="total-amount" id="total-amount">0,00 €</div>
+        </div>
+        <div class="export-actions">
+          <button id="export-pdf" type="button">Export PDF</button>
+          <button id="export-xml" type="button">Export XML</button>
+        </div>
+      </div>
     </section>
-    <script type="module" src="/js/main.js"></script>
+
+    <!-- Scripts -->
+    <script type="module" src="js/main.js"></script>
   </body>
 </html>

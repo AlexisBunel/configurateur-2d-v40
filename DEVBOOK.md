@@ -1,112 +1,139 @@
-# DEVBOOK.md – Architecture & Refonte du configurateur verrière V40
-
-## 1. Architecture cible
-
-### 1.1. Fichiers principaux
-
-- **core/ConfigModel.js**  
-  Modèle de données métier de la configuration, méthodes de modification, validation, synchronisation modules/traverses.  
-  _Zéro accès DOM._
-
-- **core/CalculationService.js**  
-  Calcul des profils/accessoires/remplissages selon la config.  
-  _Prend une config pure, retourne les calculs nécessaires._
-
-- **events/EventBus.js**  
-  Gestionnaire d’événements (subscribe, emit).
-
-- **ui/UIManager.js**  
-  Gestion du mapping DOM <-> modèle de config (lecture form, MAJ inputs, écoute des changements).
-
-- **ui/SVGRenderer.js**  
-  Prend une config, produit le SVG dans le DOM.
-
-- **ui/TablesRenderer.js**  
-  Prend les résultats du calcul, met à jour les tableaux HTML.
-
-- **main.js**  
-  Bootstrap, initialisation, “glue” entre les modules.
-
----
-
-### 1.2. Relations/Dépendances
-
-- `main.js` crée l’`EventBus`, le `ConfigModel`, les renderers UI.
-- Les renderers et UIManager s’abonnent à l’EventBus pour écouter les changements de config et afficher.
-- Seule l’UI modifie la config via le modèle.
-- Aucun module ne dépend de variables globales ou du DOM pour le core métier.
-
----
-
-## 2. Étapes de refonte
-
-1. **Identifier toutes les responsabilités métier (config, calcul, validation, modification…) et extraire du code actuel vers `ConfigModel.js` & `CalculationService.js`.**
-2. **Créer un `EventBus.js` simple et central, utilisé partout.**
-3. **Déplacer tout accès DOM dans un `UIManager.js` : il lit/écrit dans le DOM, et informe le modèle métier.**
-4. **Adapter le rendu SVG et les tableaux pour qu’ils prennent des données en argument, jamais depuis le DOM ni des globals.**
-5. **Supprimer tout code redondant/dupliqué (notamment synchronisations, validation, gestion traverses/modules).**
-6. **Supprimer tous les logs et variables/fonctions globales inutilisées.**
-7. **Renommer tous les fichiers/managers pour coller à cette architecture.**
-8. **Écrire des tests unitaires sur le core (facultatif, mais recommandé).**
-
----
-
-## 3. Règles de bonnes pratiques à respecter
-
-- **Jamais de mélange logique métier / UI** : une fonction fait soit de la logique, soit de l’affichage.
-- **Un module = une responsabilité**.
-- **Aucune variable globale, tout est instancié explicitement.**
-- **Pas de duplication de fonctions (une seule méthode pour chaque responsabilité).**
-- **Privilégier la clarté, la lisibilité et la simplicité.**
-- **Des noms explicites et cohérents partout.**
-- **Séparer clairement les couches (modèle métier, calcul, rendu, UI).**
-- **Le core métier doit pouvoir être testé indépendamment du DOM.**
-- **Aucune dépendance implicite entre modules.**
-
----
-
-## 4. Exemple d’arborescence recommandée
+# Structure du projet Configurateur V40
 
 ```
-/core/
-ConfigModel.js
-CalculationService.js
-
-/events/
-EventBus.js
-
-/ui/
-UIManager.js
-SVGRenderer.js
-TablesRenderer.js
-
-main.js
-index.html
-style.css
+configurateur-v40/
+├── index.html
+├── style.css
+└── js/
+    ├── main.js                 # Point d'entrée et orchestration
+    ├── core/
+    │   ├── EventBus.js        # Système d'événements
+    │   ├── ConfigModel.js     # Modèle de configuration (votre fichier)
+    │   └── ValidationRules.js # Rules métier et contraintes
+    ├── ui/
+    │   ├── UIManager.js       # Gestionnaire UI principal (votre fichier)
+    │   ├── FormsManager.js    # Gestion spécifique des formulaires
+    │   └── ModalsManager.js   # Modales (ajout traverses, etc.)
+    ├── rendering/
+    │   ├── SVGRenderer.js     # Rendu SVG principal
+    │   ├── CoordinatesHelper.js # Calculs coordonnées et échelle
+    │   └── DrawingElements.js # Éléments graphiques (modules, traverses...)
+    ├── calculations/
+    │   ├── ModulesCalculator.js    # Calculs modules et répartition
+    │   ├── PorteCalculator.js      # Calculs spécifiques porte
+    │   ├── TraversesCalculator.js  # Calculs traverses
+    │   └── DebitsCalculator.js     # Calculs débits et nomenclatures
+    ├── data/
+    │   ├── References.js      # Base de données produits/prix
+    │   └── PricingRules.js    # Règles de tarification
+    ├── export/
+    │   ├── PDFExporter.js     # Export PDF
+    │   ├── XMLExporter.js     # Export XML
+    │   └── TableRenderer.js   # Génération tableaux récap
+    └── utils/
+        ├── MathUtils.js       # Utilitaires mathématiques
+        ├── DOMUtils.js        # Helpers DOM
+        └── FormatterUtils.js  # Formatage données (prix, dimensions)
 ```
 
----
+## Priorités de développement immédiat
 
-## 5. FAQ
+### Phase 1A - Fondations (1-2 jours)
 
-**Q : Peut-on garder l’automatisation du DOM (formulaires dynamiques, affichage/masquage, inputs verrouillés, etc.) ?**  
-**R : Oui, mais toute cette logique doit être dans l’UIManager. Le modèle de config n’a aucune connaissance du DOM.**
+**Objectif** : Application fonctionnelle basique
 
-**Q : Les résultats des calculs (tableaux, SVG) restent-ils exploitables côté code ?**  
-**R : Oui, tous les calculs partent d’un objet “config” pur, qui peut être utilisé partout sans accès au DOM.**
+1. **EventBus.js** - Communication entre modules
+2. **SVGRenderer.js** - Rendu visuel basique
+3. **ModulesCalculator.js** - Calculs modules essentiels
+4. **Finaliser UIManager.js** - Interface complète
 
----
+### Phase 1B - Fonctionnalités core (2-3 jours)
 
-**Cette refonte rendra le projet lisible, modulaire, testable et évolutif.**
+**Objectif** : Configuration complète
 
----
+5. **PorteCalculator.js** - Logique porte complète
+6. **TraversesCalculator.js** - Gestion traverses
+7. **DebitsCalculator.js** - Calculs matériaux
+8. **References.js** - Base données produits
 
-## 6. Conseils finaux
+### Phase 1C - Finition (1-2 jours)
 
-- _Si une fonction a plus de 50 lignes, éclate-la !_
-- _Supprime sans pitié tout code mort, log de debug, variable globale, ou duplication._
-- _Teste chaque module séparément (même manuellement au début)._
-- _Documente l’API du modèle métier et des services de calculs._
-- _Prends le temps d’organiser le projet AVANT d’ajouter de nouvelles fonctionnalités !_
+**Objectif** : Version production
 
----
+9. **TableRenderer.js** - Tableaux récapitulatifs
+10. **PDFExporter.js** - Export documents
+11. **Optimisations et tests**
+
+## Architecture des données
+
+### État central (ConfigModel)
+
+```javascript
+{
+  // Dimensions principales
+  width: 4000, height: 2500, type: "porte",
+
+  // Modules
+  modulesCount: 4, porteIndex: 3,
+  modules: [
+    { width: 950, type: "fixe" },
+    { width: 950, type: "fixe" },
+    { width: 950, type: "fixe" },
+    { width: 800, type: "porte" }
+  ],
+
+  // Configuration porte
+  porte: {
+    withTierce: false, withImposte: false, withDormant: false,
+    porteWidth: 730, tierceWidth: 350, porteHeight: 2200,
+    charniereType: "visible", sensOuverture: "droit",
+    serrure: "SERROULM", profile: "po66",
+    colorBequille: "noir", colorPvitrage: "noir"
+  },
+
+  // Traverses
+  traverses: [
+    { id: 1, height: 1200, modules: [1,2,3,4] }
+  ],
+  traversesPorte: [
+    { id: 2, height: 800, type: "28", onTierce: false }
+  ],
+
+  // Options finition
+  options: {
+    colorProfile: "noir", remplissageEp: 6, colorJoint: "noir"
+  }
+}
+```
+
+### Flux de données
+
+```
+Input UI → ConfigModel.validate() → EventBus → [UIManager, SVGRenderer, Calculator] → Update
+```
+
+## Points d'attention pour la version entreprise
+
+### Performance
+
+- **Calculs différés** : Debounce sur les inputs (300ms)
+- **Rendu optimisé** : Pas de re-rendu complet à chaque changement
+- **Validation progressive** : Validation à la saisie, calculs à la validation
+
+### Robustesse
+
+- **Gestion d'erreurs** : Try/catch sur tous les calculs critiques
+- **Valeurs par défaut** : Fallback sur toutes les propriétés
+- **Validation stricte** : Contrôles métier avant chaque calcul
+
+### Maintenabilité
+
+- **Code modulaire** : Chaque fichier = responsabilité unique
+- **Documentation** : JSDoc sur toutes les fonctions publiques
+- **Tests unitaires** : Au moins sur les calculs critiques
+
+## Prochaine étape
+
+Je propose de commencer par créer l'**EventBus** et finaliser votre **ConfigModel**, puis d'enchaîner sur le **SVGRenderer** basique.
+
+Voulez-vous que je commence par l'EventBus ou préférez-vous qu'on optimise d'abord votre ConfigModel existant ?
