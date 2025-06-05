@@ -365,42 +365,28 @@ export class UIManager {
     const container = document.getElementById("modules-width");
     if (!container) return;
 
-    // Récupère les inputs existants
     const existingInputs = container.querySelectorAll(
       'input[data-config-key^="modules."]'
     );
 
-    // Si le nombre de modules a changé, reconstruit complètement
-    if (existingInputs.length !== config.modulesCount) {
+    // CORRECTION : Toujours reconstruire si le nombre de modules change OU si l'imposition change
+    const currentImposedModule = this.calculateImposedModuleIndex(config);
+    const previousImposedModule = this.lastImposedModule || -1;
+
+    if (
+      existingInputs.length !== config.modulesCount ||
+      currentImposedModule !== previousImposedModule
+    ) {
+      this.lastImposedModule = currentImposedModule;
       this.rebuildModulesInputs(config, container);
       return;
     }
 
-    // CORRECTION 3: Calculer quel module doit être imposé (dernier libre)
-    const imposedModuleIndex = this.calculateImposedModuleIndex(config);
-
-    // Sinon, met à jour seulement les valeurs et états
+    // Mise à jour des valeurs seulement
     existingInputs.forEach((input, index) => {
       const module = config.modules[index];
-      if (!module) return;
-
-      const isPorteModule =
-        config.type === "porte" && index + 1 === config.porteIndex;
-      const isImposedModule = index === imposedModuleIndex;
-
-      // Valeur
-      input.value = module.width || "";
-
-      // État (verrouillé ou non)
-      if (isPorteModule) {
-        this.lockField(input, "Module porte, largeur imposée");
-      } else if (isImposedModule) {
-        this.lockField(
-          input,
-          "Module imposé pour équilibrer la largeur totale"
-        );
-      } else {
-        this.unlockField(input);
+      if (module && input.value != module.width) {
+        input.value = module.width || "";
       }
     });
   }
@@ -411,7 +397,6 @@ export class UIManager {
   rebuildModulesInputs(config, container) {
     container.innerHTML = "";
 
-    // CORRECTION 3: Calculer quel module doit être imposé
     const imposedModuleIndex = this.calculateImposedModuleIndex(config);
 
     for (let i = 0; i < config.modulesCount; i++) {
@@ -419,6 +404,8 @@ export class UIManager {
       const isPorteModule =
         config.type === "porte" && i + 1 === config.porteIndex;
       const isImposedModule = i === imposedModuleIndex;
+      const isModifiedByUser =
+        config.moduleModifiedByUser && config.moduleModifiedByUser[i];
 
       const label = document.createElement("label");
       label.textContent = `Module ${i + 1} : `;
@@ -431,30 +418,55 @@ export class UIManager {
       input.setAttribute("data-config-key", `modules.${i}.width`);
       input.style.width = "100px";
 
-      // CORRECTION: Listener sur blur au lieu d'input pour les modules
-      input.addEventListener("blur", () => {
-        // CORRECTION 3: Ne pas permettre la modification du module imposé
-        if (!isImposedModule && !isPorteModule) {
-          this.handleModuleWidthChange(i, input.value);
-          this.validateModuleWidth(input, i);
-        }
-      });
-
-      // Validation visuelle en temps réel sans changement du modèle
-      input.addEventListener(
-        "input",
-        this.debounce(() => {
-          this.validateModuleWidth(input, i, true); // visualOnly = true
-        }, 200)
-      );
-
+      // CORRECTION : Listeners différents selon le type de module
       if (isPorteModule) {
+        // Module porte : aucun listener
         this.lockField(input, "Module porte, largeur imposée");
       } else if (isImposedModule) {
+        // Module imposé : listener spécial pour déverrouillage
         this.lockField(
           input,
-          "Module imposé pour équilibrer la largeur totale"
+          `Module imposé (${module.width}mm). Cliquer pour déverrouiller.`
         );
+
+        // CORRECTION : Click pour déverrouiller le module imposé
+        input.addEventListener("focus", () => {
+          if (
+            confirm(
+              `Déverrouiller ce module imposé ?\nIl deviendra modifiable et un autre module sera automatiquement imposé.`
+            )
+          ) {
+            this.configModel.unlockImposedModule(i);
+          } else {
+            input.blur(); // Enlever le focus si annulé
+          }
+        });
+      } else {
+        // Module libre : listeners normaux
+        this.unlockField(input);
+
+        // CORRECTION : Blur au lieu de focus pour éviter déverrouillage accidentel
+        input.addEventListener("blur", () => {
+          const newValue = parseInt(input.value);
+          if (!isNaN(newValue) && newValue !== module.width) {
+            this.handleModuleWidthChange(i, newValue);
+            this.validateModuleWidth(input, i);
+          }
+        });
+
+        // Validation visuelle en temps réel
+        input.addEventListener(
+          "input",
+          this.debounce(() => {
+            this.validateModuleWidth(input, i, true);
+          }, 200)
+        );
+
+        // Indication visuelle pour modules modifiés
+        if (isModifiedByUser) {
+          input.style.borderLeft = "3px solid #28a745";
+          input.title = "Module modifié manuellement";
+        }
       }
 
       label.appendChild(input);
@@ -472,9 +484,10 @@ export class UIManager {
     const validation = ModulesCalculator.validateModuleWidth(numValue);
     const finalValue = validation.corrected;
 
-    // Met à jour le modèle
+    // CORRECTION : Utiliser setModuleWidth qui gère automatiquement le tracking
     this.configModel.setModuleWidth(index, finalValue);
-    this.eventBus.emit("configChanged", this.configModel.getConfig());
+
+    // Pas besoin d'émettre l'événement, setModuleWidth le fait déjà
   }
 
   /**
@@ -539,25 +552,30 @@ export class UIManager {
    * CORRECTION 3: Calcule quel module doit être imposé (dernier libre non modifié)
    */
   calculateImposedModuleIndex(config) {
-    const { modulesCount, type, porteIndex } = config;
+    const { modulesCount, type, porteIndex, moduleModifiedByUser } = config;
 
-    // Si moins de 2 modules libres, pas de module imposé
-    const freeModulesCount = type === "porte" ? modulesCount - 1 : modulesCount;
-    if (freeModulesCount < 2) return -1;
+    // Identifier les modules libres (non porte, non modifiés)
+    const freeModules = [];
 
-    // Pour l'instant, on impose le dernier module libre
-    // TODO: Améliorer pour imposer le module qui n'a pas été modifié manuellement
-    let lastFreeIndex = -1;
-    for (let i = modulesCount - 1; i >= 0; i--) {
+    for (let i = 0; i < modulesCount; i++) {
       const isPorteModule = type === "porte" && i + 1 === porteIndex;
-      if (!isPorteModule) {
-        lastFreeIndex = i;
-        break;
+
+      if (
+        !isPorteModule &&
+        (!moduleModifiedByUser || !moduleModifiedByUser[i])
+      ) {
+        freeModules.push(i);
       }
     }
 
-    return lastFreeIndex;
+    // Si il reste exactement 1 module libre, c'est lui qui est imposé
+    if (freeModules.length === 1) {
+      return freeModules[0];
+    }
+
+    return -1; // Aucun module imposé
   }
+
   updatePorteIndexOptions(config) {
     const select = document.getElementById("modulePorte");
     if (!select) return;

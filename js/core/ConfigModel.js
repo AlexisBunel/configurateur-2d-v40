@@ -33,6 +33,7 @@ export class ConfigModel {
         { width: 950, type: "fixe" },
         { width: 950, type: "fixe" },
       ],
+      moduleModifiedByUser: [false, false, false, false],
       traverses: [],
       porte: {
         withTierce: false,
@@ -172,14 +173,20 @@ export class ConfigModel {
   updateModulesStructure() {
     const { modulesCount, width, type, porteIndex } = this.state;
 
-    // CORRECTION: NE PAS modifier modulesCount ici, seulement ajuster le tableau modules
-
     // Ajuste le nombre de modules dans le tableau pour correspondre à modulesCount
     while (this.state.modules.length < modulesCount) {
       this.state.modules.push({ width: 800, type: "fixe" });
     }
     while (this.state.modules.length > modulesCount) {
       this.state.modules.pop();
+    }
+
+    // Ajuste le tracking des modifications
+    while (this.state.moduleModifiedByUser.length < modulesCount) {
+      this.state.moduleModifiedByUser.push(false);
+    }
+    while (this.state.moduleModifiedByUser.length > modulesCount) {
+      this.state.moduleModifiedByUser.pop();
     }
 
     if (type === "porte") {
@@ -208,9 +215,12 @@ export class ConfigModel {
         if (isPorteModule) {
           this.state.modules[i].type = "porte";
           this.state.modules[i].width = porteModuleWidth;
+          this.state.moduleModifiedByUser[i] = false;
         } else {
           this.state.modules[i].type = "fixe";
-          this.state.modules[i].width = Math.floor(clairVitrage);
+          if (!this.state.moduleModifiedByUser[i]) {
+            this.state.modules[i].width = Math.floor(clairVitrage);
+          }
         }
       }
     } else {
@@ -223,8 +233,119 @@ export class ConfigModel {
         }
 
         this.state.modules[i].type = "fixe";
-        this.state.modules[i].width = Math.floor(clairVitrage);
+        if (!this.state.moduleModifiedByUser[i]) {
+          this.state.modules[i].width = Math.floor(clairVitrage);
+        }
       }
+    }
+    this.handleLastFreeModuleImposition();
+  }
+
+  handleLastFreeModuleImposition() {
+    const { modulesCount, type, porteIndex, width } = this.state;
+
+    // Identifier les modules libres (non porte, non modifiés)
+    const freeModules = [];
+    const modifiedModules = [];
+
+    for (let i = 0; i < modulesCount; i++) {
+      const isPorteModule = type === "porte" && i + 1 === porteIndex;
+
+      if (!isPorteModule) {
+        if (this.state.moduleModifiedByUser[i]) {
+          modifiedModules.push(i);
+        } else {
+          freeModules.push(i);
+        }
+      }
+    }
+
+    // Si il reste exactement 1 module libre, l'imposer
+    if (freeModules.length === 1) {
+      const imposedIndex = freeModules[0];
+      const imposedWidth = this.calculateImposedModuleWidth(imposedIndex);
+      this.state.modules[imposedIndex].width = imposedWidth;
+    }
+    // Si plusieurs modules libres, les recalculer équitablement
+    else if (freeModules.length > 1) {
+      this.redistributeFreeModules(freeModules);
+    }
+  }
+
+  redistributeFreeModules(freeModulesIndexes) {
+    const { modulesCount, width, type } = this.state;
+
+    if (freeModulesIndexes.length === 0) return;
+
+    // Calculer la largeur utilisée par les modules fixés (porte + modifiés)
+    let usedWidth = 0;
+    for (let i = 0; i < modulesCount; i++) {
+      const isPorteModule = type === "porte" && i + 1 === this.state.porteIndex;
+      const isModifiedModule = this.state.moduleModifiedByUser[i];
+
+      if (isPorteModule || isModifiedModule) {
+        usedWidth += this.state.modules[i].width || 0;
+      }
+    }
+
+    // Calculer les profilés
+    let profilesWidth;
+    if (type === "porte") {
+      profilesWidth = (modulesCount - 1) * 40 + 102;
+    } else {
+      profilesWidth = (modulesCount + 1) * 40;
+    }
+
+    // Largeur restante pour les modules libres
+    const remainingWidth = width - usedWidth - profilesWidth;
+    const widthPerFreeModule = Math.floor(
+      remainingWidth / freeModulesIndexes.length
+    );
+
+    // Appliquer la largeur calculée aux modules libres
+    freeModulesIndexes.forEach((index) => {
+      this.state.modules[index].width = Math.max(
+        200,
+        Math.min(2000, widthPerFreeModule)
+      );
+    });
+  }
+
+  calculateImposedModuleWidth(imposedIndex) {
+    const { modulesCount, width, type } = this.state;
+
+    // Calculer la somme des autres modules
+    let otherModulesWidth = 0;
+    for (let i = 0; i < modulesCount; i++) {
+      if (i !== imposedIndex) {
+        otherModulesWidth += this.state.modules[i].width || 0;
+      }
+    }
+
+    // Calculer les profilés
+    let profilesWidth;
+    if (type === "porte") {
+      profilesWidth = (modulesCount - 1) * 40 + 102;
+    } else {
+      profilesWidth = (modulesCount + 1) * 40;
+    }
+
+    // Largeur imposée = width - autres modules - profilés
+    const imposedWidth = width - otherModulesWidth - profilesWidth;
+
+    // Validation stricte dans les bornes
+    return Math.max(200, Math.min(2000, Math.round(imposedWidth)));
+  }
+
+  unlockImposedModule(index) {
+    // Marquer le module actuellement imposé comme modifié par l'utilisateur
+    this.state.moduleModifiedByUser[index] = true;
+
+    // Recalculer l'imposition (un autre module libre deviendra imposé)
+    this.handleLastFreeModuleImposition();
+
+    if (this.eventBus) {
+      this.eventBus.emit("configChanged", this.getConfig());
     }
   }
 
@@ -374,6 +495,11 @@ export class ConfigModel {
     const validatedWidth = this.clamp(width, 200, 2000);
     this.state.modules[index].width = validatedWidth;
 
+    // Marquer ce module comme modifié par l'utilisateur
+    this.state.moduleModifiedByUser[index] = true;
+
+    this.handleLastFreeModuleImposition();
+
     if (this.eventBus) {
       this.eventBus.emit("configChanged", this.getConfig());
     }
@@ -385,18 +511,52 @@ export class ConfigModel {
    * Remet à zéro les largeurs des modules (répartition équitable)
    */
   resetModulesWidths() {
-    const distribution = ModulesCalculator.calculateEquitableDistribution(
-      this.state
-    );
+    const { modulesCount, width, type, porteIndex } = this.state;
+    this.state.moduleModifiedByUser = new Array(modulesCount).fill(false);
 
-    distribution.forEach((newModule, index) => {
-      if (
-        this.state.modules[index] &&
-        this.state.modules[index].type !== "porte"
-      ) {
-        this.state.modules[index].width = newModule.width;
+    if (type === "porte") {
+      // AVEC PORTE : Calculer selon la formule corrigée
+      const dimensionsOuverture = PorteCalculator.calculateDimensionsOuverture(
+        this.state
+      );
+      const porteModuleWidth = dimensionsOuverture.largeur - 102;
+
+      // CORRECTION: Largeur des modules libres selon la formule corrigée
+      const freeModulesCount = modulesCount - 1;
+      const clairVitrage =
+        freeModulesCount > 0
+          ? (width - dimensionsOuverture.largeur - (modulesCount - 1) * 40) /
+            freeModulesCount
+          : 0;
+
+      // Mettre à jour tous les modules
+      for (let i = 0; i < modulesCount; i++) {
+        if (!this.state.modules[i]) {
+          this.state.modules[i] = { width: 800, type: "fixe" };
+        }
+
+        const isPorteModule = i + 1 === porteIndex;
+
+        if (isPorteModule) {
+          this.state.modules[i].type = "porte";
+          this.state.modules[i].width = porteModuleWidth;
+        } else {
+          this.state.modules[i].type = "fixe";
+          this.state.modules[i].width = Math.floor(clairVitrage);
+        }
       }
-    });
+    } else {
+      const clairVitrage = (width - (modulesCount + 1) * 40) / modulesCount;
+
+      for (let i = 0; i < modulesCount; i++) {
+        if (!this.state.modules[i]) {
+          this.state.modules[i] = { width: 800, type: "fixe" };
+        }
+
+        this.state.modules[i].type = "fixe";
+        this.state.modules[i].width = Math.floor(clairVitrage);
+      }
+    }
 
     return this.getConfig();
   }
