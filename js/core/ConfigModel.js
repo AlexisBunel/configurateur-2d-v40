@@ -1,6 +1,7 @@
 // ===== js/core/ConfigModel.js =====
 import { ModulesCalculator } from "../calculations/ModulesCalculator.js";
 import { PorteCalculator } from "../calculations/PorteCalculator.js";
+import { TraversesCalculator } from "../calculations/TraversesCalculator.js";
 import { ValidationRules } from "./ValidationRules.js";
 
 export class ConfigModel {
@@ -592,7 +593,10 @@ export class ConfigModel {
   /**
    * Ajoute une traverse de porte
    */
-  addTraversePorte(height, { type = "28", onTierce = false } = {}) {
+  addTraversePorte(
+    height,
+    { type = "28", onPorte = true, onTierce = false } = {}
+  ) {
     const maxHeight = (this.state.porte?.porteHeight || 2200) - 240;
 
     // Validation de base
@@ -600,20 +604,46 @@ export class ConfigModel {
       throw new Error(`Hauteur invalide (200 - ${maxHeight}mm)`);
     }
 
-    // Validation des conflits - CORRECTION: supprime la vérification type+onTierce
-    const conflictCheck = TraversesCalculator.checkTraversePorteConflict(
-      this.state.traversesPorte,
-      height,
-      type,
-      onTierce
-    );
+    // Au moins un emplacement doit être sélectionné
+    if (!onPorte && !onTierce) {
+      throw new Error("Sélectionnez au moins un emplacement (porte ou tierce)");
+    }
 
-    if (conflictCheck.conflict) {
-      throw new Error(conflictCheck.message);
+    // Validation des conflits selon l'emplacement
+    if (onPorte) {
+      const porteConflict =
+        TraversesCalculator.checkTraversePorteSpecificConflict(
+          this.state.traversesPorte,
+          height,
+          true,
+          false
+        );
+      if (porteConflict.conflict) {
+        throw new Error(`Sur porte: ${porteConflict.message}`);
+      }
+    }
+
+    if (onTierce) {
+      const tierceConflict =
+        TraversesCalculator.checkTraversePorteSpecificConflict(
+          this.state.traversesPorte,
+          height,
+          false,
+          true
+        );
+      if (tierceConflict.conflict) {
+        throw new Error(`Sur tierce: ${tierceConflict.message}`);
+      }
     }
 
     const id = Date.now() + Math.floor(Math.random() * 10000);
-    this.state.traversesPorte.push({ id, height, type, onTierce });
+    this.state.traversesPorte.push({
+      id,
+      height,
+      type,
+      onPorte: onPorte,
+      onTierce: onTierce,
+    });
 
     return id;
   }

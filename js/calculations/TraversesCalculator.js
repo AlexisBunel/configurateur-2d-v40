@@ -123,6 +123,47 @@ export class TraversesCalculator {
     return { conflict: false };
   }
 
+  static checkTraversePorteSpecificConflict(
+    existingTraverses,
+    newHeight,
+    checkOnPorte,
+    checkOnTierce
+  ) {
+    if (!existingTraverses || existingTraverses.length === 0) {
+      return { conflict: false };
+    }
+
+    for (const existingTraverse of existingTraverses) {
+      // Vérifier seulement les traverses du même emplacement
+      const sameLocation =
+        (checkOnPorte && existingTraverse.onPorte) ||
+        (checkOnTierce && existingTraverse.onTierce);
+
+      if (!sameLocation) continue;
+
+      // RÈGLE 1: Pas deux traverses au même emplacement à la même hauteur
+      if (existingTraverse.height === newHeight) {
+        const location = checkOnPorte ? "porte" : "tierce";
+        return {
+          conflict: true,
+          message: `Une traverse existe déjà sur la ${location} à ${newHeight}mm.`,
+        };
+      }
+
+      // RÈGLE 2: Distance minimum de 200mm entre traverses sur le même emplacement
+      const distance = Math.abs(existingTraverse.height - newHeight);
+      if (distance < 200) {
+        const location = checkOnPorte ? "porte" : "tierce";
+        return {
+          conflict: true,
+          message: `Trop proche d'une traverse sur la ${location} à ${existingTraverse.height}mm (écart: ${distance}mm).`,
+        };
+      }
+    }
+
+    return { conflict: false };
+  }
+
   /**
    * Calcule les positions recommandées pour les traverses
    * @param {number} totalHeight - Hauteur totale disponible

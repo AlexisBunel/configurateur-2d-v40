@@ -724,8 +724,8 @@ export class UIManager {
       traversesPorte.forEach((traverse) => {
         const option = document.createElement("option");
         option.value = traverse.id;
-        const tierceTxt = traverse.onTierce ? " + tierce" : "";
-        option.textContent = `Traverse ${traverse.height}mm (${traverse.type}mm${tierceTxt})`;
+        const tierceTxt = traverse.onTierce ? " tierce" : " porte";
+        option.textContent = `Traverse ${traverse.height}mm (${traverse.type}mm) - ${tierceTxt}`;
         select.appendChild(option);
       });
     }
@@ -809,6 +809,7 @@ export class UIManager {
         try {
           this.configModel.addTraversePorte(data.height, {
             type: data.type,
+            onPorte: data.onPorte,
             onTierce: data.onTierce,
           });
           this.eventBus.emit("configChanged", this.configModel.getConfig());
@@ -907,36 +908,46 @@ export class UIManager {
     form.innerHTML = `
       <h4>${options.title}</h4>
       <div class="form-group">
-  <label>
-    Hauteur sol / sous-traverse (mm) :
-    <input type="number" min="${options.heightMin}" max="${options.heightMax}" 
-           name="height" required style="width:80px" />
-  </label>
-  <small>Distance depuis le sol jusqu'à la sous-face de la traverse (entre ${
-    options.heightMin
-  }mm et ${options.heightMax}mm)</small>
-</div>
+        <label>
+          Hauteur sol / sous-traverse (mm) :
+          <input type="number" min="${options.heightMin}" max="${
+      options.heightMax
+    }" 
+                 name="height" required style="width:80px" />
+        </label>
+        <small>Distance depuis le sol jusqu'à la sous-face de la traverse (entre ${
+          options.heightMin
+        }mm et ${options.heightMax}mm)</small>
+      </div>
       <div class="form-group">
         <label>
           Type de traverse :
           <select name="type">
-            <option value="28">28mm</option>
+            <option value="28" selected>28mm</option>
             <option value="37">37mm</option>
           </select>
         </label>
       </div>
-      ${
-        options.hastierce
-          ? `
-        <div class="form-group">
-          <label>
-            <input type="checkbox" name="onTierce" />
-            Sur la tierce
+      <div class="form-group">
+        <label style="font-weight: 600; color: #495057; margin-bottom: 10px;">Emplacement :</label>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 15px;">
+          <label style="flex-direction: row; align-items: center; gap: 8px; font-weight: normal;">
+            <input type="checkbox" name="onPorte" checked style="width: auto;" />
+            Sur la porte
           </label>
+          ${
+            options.hastierce
+              ? `
+            <label style="flex-direction: row; align-items: center; gap: 8px; font-weight: normal;">
+              <input type="checkbox" name="onTierce" style="width: auto;" />
+              Sur la tierce
+            </label>
+          `
+              : ""
+          }
         </div>
-      `
-          : ""
-      }
+        <small style="margin-top: 8px;">Sélectionnez où placer la traverse</small>
+      </div>
       <div class="form-actions">
         <button type="submit">Ajouter</button>
         <button type="button" class="cancel-btn">Annuler</button>
@@ -949,7 +960,17 @@ export class UIManager {
       e.preventDefault();
       const height = parseInt(form.height.value);
       const type = form.type.value;
+      const onPorte = form.onPorte?.checked || false;
       const onTierce = form.onTierce?.checked || false;
+
+      // Validation : au moins une case cochée
+      if (!onPorte && !onTierce) {
+        this.showError(
+          form,
+          "Sélectionnez au moins un emplacement (porte ou tierce)"
+        );
+        return;
+      }
 
       const validation = TraversesCalculator.validateTraversePortePosition(
         height,
@@ -960,25 +981,50 @@ export class UIManager {
         return;
       }
 
-      options.onSubmit({ height, type, onTierce });
+      // Créer les traverses selon les sélections
+      try {
+        if (onPorte) {
+          options.onSubmit({ height, type, onPorte: true, onTierce: false });
+        }
+        if (onTierce) {
+          options.onSubmit({ height, type, onPorte: false, onTierce: true });
+        }
+      } catch (error) {
+        this.showError(form, error.message);
+      }
     });
 
+    // Validation en temps réel
     const heightInput = form.querySelector('input[name="height"]');
     heightInput.addEventListener("input", () => {
       const height = parseInt(heightInput.value);
       if (!isNaN(height)) {
         const config = this.configModel.state;
-        const conflictCheck = TraversesCalculator.checkTraversePorteConflict(
-          config.traversesPorte,
-          height,
-          "28", // Type peu importe pour la validation
-          false
-        );
 
-        if (conflictCheck.conflict) {
-          this.showError(form, conflictCheck.message);
+        // Vérifier les conflits sur porte et tierce séparément
+        const porteConflict =
+          TraversesCalculator.checkTraversePorteSpecificConflict(
+            config.traversesPorte,
+            height,
+            true,
+            false // onPorte=true, onTierce=false
+          );
+        const tierceConflict = config.porte?.withTierce
+          ? TraversesCalculator.checkTraversePorteSpecificConflict(
+              config.traversesPorte,
+              height,
+              false,
+              true // onPorte=false, onTierce=true
+            )
+          : { conflict: false };
+
+        if (porteConflict.conflict && tierceConflict.conflict) {
+          this.showError(form, `Conflits sur porte ET tierce à ${height}mm`);
+        } else if (porteConflict.conflict) {
+          this.showError(form, `Conflit sur porte: ${porteConflict.message}`);
+        } else if (tierceConflict.conflict) {
+          this.showError(form, `Conflit sur tierce: ${tierceConflict.message}`);
         } else {
-          // Effacer l'erreur si pas de conflit
           const errorContainer = form.querySelector(".error-container");
           if (errorContainer) errorContainer.innerHTML = "";
         }
@@ -988,7 +1034,6 @@ export class UIManager {
     form
       .querySelector(".cancel-btn")
       .addEventListener("click", options.onCancel);
-
     return form;
   }
 
