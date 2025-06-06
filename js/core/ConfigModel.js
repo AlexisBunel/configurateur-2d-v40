@@ -337,18 +337,6 @@ export class ConfigModel {
     return Math.max(200, Math.min(2000, Math.round(imposedWidth)));
   }
 
-  unlockImposedModule(index) {
-    // Marquer le module actuellement imposé comme modifié par l'utilisateur
-    this.state.moduleModifiedByUser[index] = true;
-
-    // Recalculer l'imposition (un autre module libre deviendra imposé)
-    this.handleLastFreeModuleImposition();
-
-    if (this.eventBus) {
-      this.eventBus.emit("configChanged", this.getConfig());
-    }
-  }
-
   /**
    * Met à jour la hauteur de porte si calculée automatiquement
    */

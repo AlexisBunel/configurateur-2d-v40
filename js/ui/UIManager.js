@@ -424,23 +424,7 @@ export class UIManager {
         this.lockField(input, "Module porte, largeur imposée");
       } else if (isImposedModule) {
         // Module imposé : listener spécial pour déverrouillage
-        this.lockField(
-          input,
-          `Module imposé (${module.width}mm). Cliquer pour déverrouiller.`
-        );
-
-        // CORRECTION : Click pour déverrouiller le module imposé
-        input.addEventListener("focus", () => {
-          if (
-            confirm(
-              `Déverrouiller ce module imposé ?\nIl deviendra modifiable et un autre module sera automatiquement imposé.`
-            )
-          ) {
-            this.configModel.unlockImposedModule(i);
-          } else {
-            input.blur(); // Enlever le focus si annulé
-          }
-        });
+        this.lockField(input, `Module imposé (${module.width}mm).`);
       } else {
         // Module libre : listeners normaux
         this.unlockField(input);
@@ -610,7 +594,7 @@ export class UIManager {
 
     if (po6622uOption) {
       // CORRECTION: Inversion de la logique - PO6622U disponible SI hauteur >= 2204
-      if (porteHeight >= 2204) {
+      if (porteHeight <= 2204) {
         // Hauteur suffisante : PO6622U disponible
         po6622uOption.disabled = false;
         po6622uOption.textContent = "PO6622U - Profil Porte Ouvrante 66 usiné";
@@ -620,7 +604,7 @@ export class UIManager {
         // Hauteur insuffisante : verrouiller PO6622U
         po6622uOption.disabled = true;
         po6622uOption.textContent =
-          "PO6622U - Non disponible (hauteur < 2204mm)";
+          "PO6622U - Non disponible (hauteur > 2204mm)";
         po6622uOption.style.color = "#999";
         po6622uOption.style.fontStyle = "italic";
 
