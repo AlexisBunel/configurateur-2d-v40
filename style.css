@@ -349,7 +349,7 @@ button:disabled {
 #recapitulatif caption {
   background: linear-gradient(135deg, #007bff, #0056b3);
   color: white;
-  padding: 16px 20px;
+  padding: 10px 20px;
   font-weight: 700;
   font-size: 1.2rem;
   text-align: left;

@@ -1,6 +1,7 @@
 import { EventBus } from "./core/EventBus.js";
 import { ConfigModel } from "./core/ConfigModel.js";
 import { UIManager } from "./ui/UIManager.js";
+import { TableRenderer } from "./export/TableRenderer.js";
 
 /**
  * Application principale - Point d'entrée
@@ -10,6 +11,7 @@ class VerrierApp {
     this.eventBus = new EventBus();
     this.configModel = null;
     this.uiManager = null;
+    this.tableRenderer = null;
 
     this.init();
   }
@@ -28,6 +30,10 @@ class VerrierApp {
       // 2. Initialisation du gestionnaire UI
       this.uiManager = new UIManager(this.configModel, this.eventBus);
       console.log("✅ UIManager initialisé");
+
+      // 3. Initialisation du rendu des tableaux
+      this.tableRenderer = new TableRenderer(this.eventBus);
+      console.log("✅ TableRenderer initialisé");
 
       // 3. Configuration des événements globaux
       this.setupGlobalEvents();

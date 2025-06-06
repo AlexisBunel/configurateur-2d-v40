@@ -41,42 +41,75 @@ export class PorteCalculator {
    * @param {Object} config - Configuration complète
    * @returns {{hauteur: number, largeur: number, hasOuverture: boolean}}
    */
+  // static calculateDimensionsOuverture(config) {
+  //   if (config.type !== "porte") {
+  //     return { hauteur: 0, largeur: 0, hasOuverture: false };
+  //   }
+
+  //   const { porte, height } = config;
+  //   let hauteur, largeur;
+
+  //   // ===== Calcul de la hauteur d'ouverture =====
+  //   if (porte?.withImposte === true || porte?.withImposte === "true") {
+  //     // Avec imposte : hauteur porte + jeu + dormant
+  //     hauteur = (porte?.porteHeight || 0) + 15 + 51;
+  //   } else {
+  //     // Sans imposte : hauteur totale de la verrière
+  //     hauteur = height || 0;
+  //   }
+
+  //   // ===== Calcul de la largeur d'ouverture =====
+  //   const porteWidth = porte?.porteWidth || 0;
+  //   const charniere = porte?.charniereType || "visible";
+  //   const withTierce =
+  //     porte?.withTierce === true || porte?.withTierce === "true";
+  //   const tierceWidth = porte?.tierceWidth || 0;
+
+  //   // Offset selon le type de charnière
+  //   const charniereOffset = charniere === "invisible" ? 6 : 10;
+
+  //   // Largeur de base : porte + profilés + charnière
+  //   const baseWidth = porteWidth + 102 + charniereOffset;
+
+  //   if (withTierce) {
+  //     // Avec tierce : ajouter largeur tierce + jeu supplémentaire
+  //     largeur = baseWidth + tierceWidth + 5;
+  //   } else {
+  //     // Sans tierce
+  //     largeur = baseWidth;
+  //   }
+
+  //   return {
+  //     hauteur: Math.round(hauteur),
+  //     largeur: Math.round(largeur),
+  //     hasOuverture: true,
+  //   };
+  // }
+
   static calculateDimensionsOuverture(config) {
     if (config.type !== "porte") {
       return { hauteur: 0, largeur: 0, hasOuverture: false };
     }
 
     const { porte, height } = config;
-    let hauteur, largeur;
 
-    // ===== Calcul de la hauteur d'ouverture =====
-    if (porte?.withImposte === true || porte?.withImposte === "true") {
-      // Avec imposte : hauteur porte + jeu + dormant
-      hauteur = (porte?.porteHeight || 0) + 15 + 51;
-    } else {
-      // Sans imposte : hauteur totale de la verrière
-      hauteur = height || 0;
-    }
+    // ===== Calcul hauteur d'ouverture =====
+    const hauteur = porte?.withImposte
+      ? (porte?.porteHeight || 0) + 15 + 51
+      : height || 0;
 
-    // ===== Calcul de la largeur d'ouverture =====
+    // ===== Calcul largeur d'ouverture (OPTIMISÉ) =====
     const porteWidth = porte?.porteWidth || 0;
-    const charniere = porte?.charniereType || "visible";
+    const charniereOffset = porte?.charniereType === "invisible" ? 6 : 10;
     const withTierce =
       porte?.withTierce === true || porte?.withTierce === "true";
-    const tierceWidth = porte?.tierceWidth || 0;
-
-    // Offset selon le type de charnière
-    const charniereOffset = charniere === "invisible" ? 6 : 10;
 
     // Largeur de base : porte + profilés + charnière
-    const baseWidth = porteWidth + 102 + charniereOffset;
+    let largeur = porteWidth + 102 + charniereOffset;
 
+    // Ajouter tierce si nécessaire
     if (withTierce) {
-      // Avec tierce : ajouter largeur tierce + jeu supplémentaire
-      largeur = baseWidth + tierceWidth + 5;
-    } else {
-      // Sans tierce
-      largeur = baseWidth;
+      largeur += (porte?.tierceWidth || 0) + 5;
     }
 
     return {
