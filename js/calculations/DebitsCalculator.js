@@ -2,6 +2,7 @@
 import { References } from "../data/References.js";
 import { PorteCalculator } from "./PorteCalculator.js";
 import { PC40Calculator } from "./PC40Calculator.js";
+import { PT40Calculator } from "./PT40Calculator.js";
 
 export class DebitsCalculator {
   /**
@@ -77,6 +78,51 @@ export class DebitsCalculator {
       profiles.push({
         ref: "PC40",
         description: "PC40 - Erreur de calcul",
+        finition: "Standard",
+        length: 0,
+        quantity: 0,
+        unitPrice: 0,
+        totalPrice: 0,
+        category: "structure",
+      });
+    }
+
+    // ===== CALCUL PT40 et PAT40 (traverses) =====
+    try {
+      const traversesReport = PT40Calculator.generateReport(config);
+
+      console.log("📊 Rapport Traverses:", traversesReport);
+
+      // Ajouter les lignes PT40 et PAT40
+      traversesReport.tableLines.forEach((line) => {
+        profiles.push({
+          ref: line.ref,
+          description: line.description,
+          finition: this.getFinishDescription(
+            config.options?.colorProfile || "noir"
+          ),
+          length: line.length,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          totalPrice: line.totalPrice,
+          category: line.category,
+        });
+      });
+
+      // Afficher les avertissements s'il y en a
+      if (traversesReport.validation.warnings.length > 0) {
+        console.warn(
+          "⚠️ Avertissements Traverses:",
+          traversesReport.validation.warnings
+        );
+      }
+    } catch (error) {
+      console.error("❌ Erreur calcul Traverses:", error);
+
+      // En cas d'erreur, ajouter des entrées par défaut
+      profiles.push({
+        ref: "PT40",
+        description: "PT40 - Erreur de calcul",
         finition: "Standard",
         length: 0,
         quantity: 0,

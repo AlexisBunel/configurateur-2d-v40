@@ -13,7 +13,6 @@ export class References {
       category: "structure",
       type: "cadre",
     },
-
     PAC40: {
       ref: "PAC40",
       description: "Parclose cadre 40",
@@ -21,6 +20,22 @@ export class References {
       unit: "mm",
       category: "parclose",
       type: "cadre",
+    },
+    PT40: {
+      ref: "PT40",
+      description: "Profil traverse 40",
+      price: 0,
+      unit: "mm",
+      category: "structure",
+      type: "traverse",
+    },
+    PAT40: {
+      ref: "PAT40",
+      description: "Parclose traverse 40",
+      price: 0,
+      unit: "mm",
+      category: "parclose",
+      type: "traverse",
     },
   };
 

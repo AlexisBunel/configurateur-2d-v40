@@ -243,6 +243,63 @@ export class PC40Calculator {
   /**
    * Calcule les longueurs à gauche et à droite de la porte (porte au centre)
    */
+  // static calculateLongueursGaucheDroite(config) {
+  //   const { width, modulesCount, porteIndex } = config;
+  //   let longueurGauche = 0;
+  //   let longueurDroite = 0;
+
+  //   // SÉCURITÉ : Vérifier que porteIndex est valide
+  //   if (porteIndex < 1 || porteIndex > modulesCount) {
+  //     console.error("❌ ERREUR: porteIndex invalide", {
+  //       porteIndex,
+  //       modulesCount,
+  //     });
+  //     return { longueurGauche: 0, longueurDroite: 0 };
+  //   }
+
+  //   // Calculer la largeur à gauche de la porte
+  //   console.log(`🔍 Calcul gauche - porteIndex: ${porteIndex}`);
+  //   for (let i = 1; i < porteIndex; i++) {
+  //     const moduleIndex = i - 1;
+  //     const moduleWidth =
+  //       config.modules?.[moduleIndex]?.width || width / modulesCount;
+
+  //     console.log(`📏 Module ${i} (index ${moduleIndex}): ${moduleWidth}mm`);
+  //     longueurGauche += moduleWidth;
+  //   }
+
+  //   // Ajouter les profils entre les modules à gauche
+  //   const profilsGauche = Math.max(0, porteIndex - 2);
+  //   longueurGauche += profilsGauche * 40;
+  //   console.log(
+  //     `🔗 Profils à gauche: ${profilsGauche} × 40mm = ${profilsGauche * 40}mm`
+  //   );
+  //   console.log(`📊 Total gauche: ${longueurGauche}mm`);
+
+  //   // Calculer la largeur à droite de la porte
+  //   console.log(
+  //     `🔍 Calcul droite - porteIndex: ${porteIndex}, modulesCount: ${modulesCount}`
+  //   );
+
+  //   for (let i = porteIndex + 1; i <= modulesCount; i++) {
+  //     const moduleIndex = i - 1;
+  //     const moduleWidth =
+  //       config.modules?.[moduleIndex]?.width || width / modulesCount;
+
+  //     console.log(`📏 Module ${i} (index ${moduleIndex}): ${moduleWidth}mm`);
+  //     longueurDroite += moduleWidth;
+  //   }
+
+  //   // Ajouter les profils entre les modules à droite
+  //   const profilsDroite = Math.max(0, modulesCount - porteIndex - 1);
+  //   longueurDroite += profilsDroite * 40;
+  //   console.log(
+  //     `🔗 Profils à droite: ${profilsDroite} × 40mm = ${profilsDroite * 40}mm`
+  //   );
+  //   console.log(`📊 Total droite: ${longueurDroite}mm`);
+
+  //   return { longueurGauche, longueurDroite };
+  // }
   static calculateLongueursGaucheDroite(config) {
     const { width, modulesCount, porteIndex } = config;
     let longueurGauche = 0;
@@ -261,8 +318,7 @@ export class PC40Calculator {
     console.log(`🔍 Calcul gauche - porteIndex: ${porteIndex}`);
     for (let i = 1; i < porteIndex; i++) {
       const moduleIndex = i - 1;
-      const moduleWidth =
-        config.modules?.[moduleIndex]?.width || width / modulesCount;
+      const moduleWidth = config.modules?.[moduleIndex]?.width;
 
       console.log(`📏 Module ${i} (index ${moduleIndex}): ${moduleWidth}mm`);
       longueurGauche += moduleWidth;
@@ -358,7 +414,7 @@ export class PC40Calculator {
     variantes.forEach((variante) => {
       lines.push({
         ref: profileRef,
-        description: `${profileRef} - ${variante.description}`,
+        description: variante.description,
         length: variante.longueur,
         quantity: variante.quantite,
         unitPrice: 0, // Prix à définir plus tard
