@@ -852,7 +852,7 @@ export class UIManager {
             (_, i) => `
             <label>
               <input type="checkbox" value="${i + 1}" checked />
-              M${i + 1}
+              Module ${i + 1}
             </label>
           `
           ).join("")}
@@ -907,15 +907,15 @@ export class UIManager {
     form.innerHTML = `
       <h4>${options.title}</h4>
       <div class="form-group">
-        <label>
-          Hauteur (mm) :
-          <input type="number" min="${options.heightMin}" max="${
-      options.heightMax
-    }" 
-                 name="height" required style="width:80px" />
-        </label>
-        <small>Entre ${options.heightMin}mm et ${options.heightMax}mm</small>
-      </div>
+  <label>
+    Hauteur sol / sous-traverse (mm) :
+    <input type="number" min="${options.heightMin}" max="${options.heightMax}" 
+           name="height" required style="width:80px" />
+  </label>
+  <small>Distance depuis le sol jusqu'à la sous-face de la traverse (entre ${
+    options.heightMin
+  }mm et ${options.heightMax}mm)</small>
+</div>
       <div class="form-group">
         <label>
           Type de traverse :
@@ -961,6 +961,28 @@ export class UIManager {
       }
 
       options.onSubmit({ height, type, onTierce });
+    });
+
+    const heightInput = form.querySelector('input[name="height"]');
+    heightInput.addEventListener("input", () => {
+      const height = parseInt(heightInput.value);
+      if (!isNaN(height)) {
+        const config = this.configModel.state;
+        const conflictCheck = TraversesCalculator.checkTraversePorteConflict(
+          config.traversesPorte,
+          height,
+          "28", // Type peu importe pour la validation
+          false
+        );
+
+        if (conflictCheck.conflict) {
+          this.showError(form, conflictCheck.message);
+        } else {
+          // Effacer l'erreur si pas de conflit
+          const errorContainer = form.querySelector(".error-container");
+          if (errorContainer) errorContainer.innerHTML = "";
+        }
+      }
     });
 
     form

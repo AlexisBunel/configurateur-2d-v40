@@ -595,19 +595,21 @@ export class ConfigModel {
   addTraversePorte(height, { type = "28", onTierce = false } = {}) {
     const maxHeight = (this.state.porte?.porteHeight || 2200) - 240;
 
+    // Validation de base
     if (height < 200 || height > maxHeight) {
-      throw new Error(
-        `Hauteur de traverse porte invalide (200 - ${maxHeight})`
-      );
+      throw new Error(`Hauteur invalide (200 - ${maxHeight}mm)`);
     }
 
-    // Vérification des conflits
-    const conflict = this.state.traversesPorte.some(
-      (t) => t.height === height && t.type === type && t.onTierce === onTierce
+    // Validation des conflits - CORRECTION: supprime la vérification type+onTierce
+    const conflictCheck = TraversesCalculator.checkTraversePorteConflict(
+      this.state.traversesPorte,
+      height,
+      type,
+      onTierce
     );
 
-    if (conflict) {
-      throw new Error("Traverse de porte déjà existante avec ces paramètres");
+    if (conflictCheck.conflict) {
+      throw new Error(conflictCheck.message);
     }
 
     const id = Date.now() + Math.floor(Math.random() * 10000);

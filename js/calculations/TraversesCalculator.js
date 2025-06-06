@@ -97,17 +97,25 @@ export class TraversesCalculator {
     newType,
     newOnTierce
   ) {
-    for (const traverse of existingTraverses) {
-      if (
-        traverse.height === newHeight &&
-        traverse.type === newType &&
-        traverse.onTierce === newOnTierce
-      ) {
+    if (!existingTraverses || existingTraverses.length === 0) {
+      return { conflict: false };
+    }
+
+    for (const existingTraverse of existingTraverses) {
+      // RÈGLE 1: Pas deux traverses à la même hauteur exacte (peu importe le type)
+      if (existingTraverse.height === newHeight) {
         return {
           conflict: true,
-          message: `Traverse ${newType}mm déjà présente à ${newHeight}mm ${
-            newOnTierce ? "sur tierce" : ""
-          }`,
+          message: `Une traverse existe déjà à ${newHeight}mm. Choisissez une autre hauteur.`,
+        };
+      }
+
+      // RÈGLE 2: Distance minimum de 200mm entre traverses
+      const distance = Math.abs(existingTraverse.height - newHeight);
+      if (distance < 200) {
+        return {
+          conflict: true,
+          message: `Trop proche d'une traverse à ${existingTraverse.height}mm (écart: ${distance}mm). Minimum 200mm requis.`,
         };
       }
     }
