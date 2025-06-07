@@ -11,6 +11,9 @@ export class UIManager {
     this.fieldValidators = new Map();
     this.lockedFields = new Set();
     this.isUpdatingUI = false; // CORRECTION: Protection contre les boucles
+    this.lastImposedModule = -1;
+    this.lastConfigType = "pleine";
+    this.lastPorteIndex = null;
 
     this.init();
   }
@@ -369,20 +372,32 @@ export class UIManager {
       'input[data-config-key^="modules."]'
     );
 
-    // CORRECTION : Toujours reconstruire si le nombre de modules change OU si l'imposition change
+    // Calculs des états actuels et précédents
     const currentImposedModule = this.calculateImposedModuleIndex(config);
     const previousImposedModule = this.lastImposedModule || -1;
+    const currentType = config.type;
+    const previousType = this.lastConfigType || "pleine";
+    const currentPorteIndex =
+      config.type === "porte" ? config.porteIndex : null;
+    const previousPorteIndex = this.lastPorteIndex || null;
 
+    // ✅ CONDITION COMPLÈTE pour déclencher la reconstruction
     if (
       existingInputs.length !== config.modulesCount ||
-      currentImposedModule !== previousImposedModule
+      currentImposedModule !== previousImposedModule ||
+      currentType !== previousType ||
+      currentPorteIndex !== previousPorteIndex // ← AJOUT CRUCIAL !
     ) {
+      // Mettre à jour tous les trackers
       this.lastImposedModule = currentImposedModule;
+      this.lastConfigType = currentType;
+      this.lastPorteIndex = currentPorteIndex; // ← NOUVEAU TRACKER
+
       this.rebuildModulesInputs(config, container);
       return;
     }
 
-    // Mise à jour des valeurs seulement
+    // Mise à jour simple des valeurs (sans reconstruction)
     existingInputs.forEach((input, index) => {
       const module = config.modules[index];
       if (module && input.value != module.width) {
@@ -774,6 +789,11 @@ export class UIManager {
       heightMin: 240,
       heightMax: maxHeight,
       modulesCount: config.modulesCount,
+
+      // ✅ AJOUT : Passer les infos sur la porte
+      hasPorte: config.type === "porte",
+      porteIndex: config.porteIndex,
+
       onSubmit: (data) => {
         try {
           this.configModel.addTraverse(data.height, data.modules);
@@ -794,24 +814,25 @@ export class UIManager {
   /**
    * Affiche le modal d'ajout de traverse porte
    */
-  showAddTraversePorteModal() {
-    if (document.getElementById("add-traverse-porte-form")) return;
+  showAddTraverseModal() {
+    if (document.getElementById("add-traverse-form")) return;
 
     const config = this.configModel.state;
-    const maxHeight = (config.porte?.porteHeight || 2200) - 240;
+    const maxHeight = config.height - 240;
 
-    const form = this.createTraversePorteForm("add-traverse-porte-form", {
-      title: "Ajouter une traverse de porte",
-      heightMin: 200,
+    const form = this.createTraverseForm("add-traverse-form", {
+      title: "Ajouter une traverse",
+      heightMin: 240,
       heightMax: maxHeight,
-      hastierce: config.porte?.withTierce,
+      modulesCount: config.modulesCount,
+
+      // ✅ AJOUT : Passer les infos sur la porte
+      hasPorte: config.type === "porte",
+      porteIndex: config.porteIndex,
+
       onSubmit: (data) => {
         try {
-          this.configModel.addTraversePorte(data.height, {
-            type: data.type,
-            onPorte: data.onPorte,
-            onTierce: data.onTierce,
-          });
+          this.configModel.addTraverse(data.height, data.modules);
           this.eventBus.emit("configChanged", this.configModel.getConfig());
           form.remove();
         } catch (error) {
@@ -822,7 +843,7 @@ export class UIManager {
     });
 
     document
-      .getElementById("add-traverse-porte")
+      .getElementById("add-traverse")
       .insertAdjacentElement("afterend", form);
   }
 
@@ -833,49 +854,68 @@ export class UIManager {
     const form = document.createElement("form");
     form.id = id;
     form.className = "traverse-form";
+
     form.innerHTML = `
-      <h4>${options.title}</h4>
-      <div class="form-group">
-        <label>
-          Hauteur (mm) :
-          <input type="number" min="${options.heightMin}" max="${
+    <h4>${options.title}</h4>
+    <div class="form-group">
+      <label>
+        Hauteur (mm) :
+        <input type="number" min="${options.heightMin}" max="${
       options.heightMax
     }" 
-                 name="height" required style="width:80px" />
-        </label>
-        <small>Entre ${options.heightMin}mm et ${options.heightMax}mm</small>
+               name="height" required style="width:80px" />
+      </label>
+      <small>Entre ${options.heightMin}mm et ${options.heightMax}mm</small>
+    </div>
+    <div class="form-group">
+      <label>Modules concernés :</label>
+      <div class="modules-checkboxes">
+        ${this.generateModulesCheckboxes(options)}
       </div>
-      <div class="form-group">
-        <label>Modules concernés :</label>
-        <div class="modules-checkboxes">
-          ${Array.from(
-            { length: options.modulesCount },
-            (_, i) => `
-            <label>
-              <input type="checkbox" value="${i + 1}" checked />
-              Module ${i + 1}
-            </label>
-          `
-          ).join("")}
-        </div>
-      </div>
-      <div class="form-actions">
-        <button type="submit">Ajouter</button>
-        <button type="button" class="cancel-btn">Annuler</button>
-      </div>
-      <div class="error-container"></div>
-    `;
+      ${
+        options.hasPorte
+          ? '<small style="color: #dc3545; font-style: italic;">⚠️ Le module contenant la porte ne peut pas avoir de traverse</small>'
+          : ""
+      }
+    </div>
+    <div class="form-actions">
+      <button type="submit">Ajouter</button>
+      <button type="button" class="cancel-btn">Annuler</button>
+    </div>
+    <div class="error-container"></div>
+  `;
 
-    // Listeners
+    // Listeners simplifiés
+    this.attachTraverseFormListeners(form, options);
+
+    return form;
+  }
+
+  attachTraverseFormListeners(form, options) {
+    // Listener submit avec validation améliorée
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const height = parseInt(form.height.value);
-      const modules = Array.from(
-        form.querySelectorAll('input[type="checkbox"]:checked')
-      ).map((cb) => parseInt(cb.value));
 
+      const height = parseInt(form.height.value);
+      const selectedCheckboxes = form.querySelectorAll(
+        'input[type="checkbox"]:checked:not(:disabled)'
+      );
+      const modules = Array.from(selectedCheckboxes).map((cb) =>
+        parseInt(cb.value)
+      );
+
+      // Validation
       if (modules.length === 0) {
         this.showError(form, "Sélectionnez au moins un module !");
+        return;
+      }
+
+      // Double vérification : S'assurer qu'aucun module porte n'est sélectionné
+      if (options.hasPorte && modules.includes(options.porteIndex)) {
+        this.showError(
+          form,
+          "Le module contenant la porte ne peut pas avoir de traverse !"
+        );
         return;
       }
 
@@ -891,11 +931,87 @@ export class UIManager {
       options.onSubmit({ height, modules });
     });
 
+    // Listener cancel
     form
       .querySelector(".cancel-btn")
       .addEventListener("click", options.onCancel);
+  }
 
-    return form;
+  addModuleSelectionInfo(form, options) {
+    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+    const infoDiv = document.createElement("div");
+    infoDiv.className = "modules-selection-info";
+    infoDiv.style.marginTop = "10px";
+    infoDiv.style.fontSize = "0.85rem";
+    infoDiv.style.color = "#495057";
+
+    // Fonction pour mettre à jour l'info
+    const updateInfo = () => {
+      const selectedCount = form.querySelectorAll(
+        'input[type="checkbox"]:checked:not(:disabled)'
+      ).length;
+      const totalAvailable = options.modulesCount - (options.hasPorte ? 1 : 0);
+
+      infoDiv.innerHTML = `
+      <strong>Sélection :</strong> ${selectedCount}/${totalAvailable} modules disponibles
+      ${
+        options.hasPorte
+          ? "<br><em>Le module porte est automatiquement exclu</em>"
+          : ""
+      }
+    `;
+    };
+
+    // Ajouter listeners aux checkboxes
+    checkboxes.forEach((checkbox) => {
+      if (!checkbox.disabled) {
+        checkbox.addEventListener("change", updateInfo);
+      }
+    });
+
+    // Ajouter l'info au formulaire
+    const modulesGroup = form.querySelector(".form-group:last-of-type");
+    modulesGroup.appendChild(infoDiv);
+
+    // Mise à jour initiale
+    updateInfo();
+  }
+
+  generateModulesCheckboxes(options) {
+    const { modulesCount, hasPorte, porteIndex } = options;
+
+    return Array.from({ length: modulesCount }, (_, i) => {
+      const moduleNumber = i + 1;
+      const isPorteModule = hasPorte && moduleNumber === porteIndex;
+
+      // Déterminer l'état de la checkbox
+      const isChecked = !isPorteModule; // Cochée par défaut sauf pour le module porte
+      const isDisabled = isPorteModule; // Désactivée pour le module porte
+
+      // Déterminer le texte et le style
+      let labelText = `Module ${moduleNumber}`;
+      let labelStyle = "";
+      let checkboxStyle = "";
+
+      if (isPorteModule) {
+        labelText = `Module ${moduleNumber} (porte)`;
+        labelStyle = 'style="color: #6c757d; font-style: italic;"';
+        checkboxStyle = 'style="cursor: not-allowed;"';
+      }
+
+      return `
+      <label ${labelStyle}>
+        <input 
+          type="checkbox" 
+          value="${moduleNumber}" 
+          ${isChecked ? "checked" : ""}
+          ${isDisabled ? "disabled" : ""}
+          ${checkboxStyle}
+        />
+        ${labelText}
+      </label>
+    `;
+    }).join("");
   }
 
   /**

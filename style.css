@@ -267,6 +267,16 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+.modules-checkboxes label:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modules-checkboxes input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* ===== Formulaires de traverses ===== */
 .traverse-form {
   background-color: #f8f9fa;

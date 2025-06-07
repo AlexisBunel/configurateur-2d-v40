@@ -76,11 +76,11 @@ class VerrierApp {
     });
 
     // Sauvegarde automatique avant fermeture (optionnel)
-    window.addEventListener("beforeunload", () => {
-      if (this.configModel) {
-        this.configModel.saveToStorage();
-      }
-    });
+    // window.addEventListener("beforeunload", () => {
+    //   if (this.configModel) {
+    //     this.configModel.saveToStorage();
+    //   }
+    // });
 
     // Raccourcis clavier
     document.addEventListener("keydown", (event) => {
@@ -133,31 +133,41 @@ class VerrierApp {
     }
 
     // Sauvegarde automatique (optionnel)
-    if (this.autoSaveEnabled()) {
-      this.debounce(() => {
-        this.configModel.saveToStorage("autosave_config");
-      }, 2000)();
-    }
+    // if (this.autoSaveEnabled()) {
+    //   this.debounce(() => {
+    //     this.configModel.saveToStorage("autosave_config");
+    //   }, 2000)();
+    // }
   }
 
   /**
    * Charge une configuration sauvegardée
    */
   loadSavedConfig() {
+    console.log(
+      "📋 Utilisation de la configuration par défaut (chargement désactivé)"
+    );
     try {
-      // Essaie de charger la dernière configuration
-      const loaded = this.configModel.loadFromStorage();
-      if (loaded) {
-        console.log("📂 Configuration chargée depuis le stockage");
-      } else {
-        console.log("📋 Utilisation de la configuration par défaut");
-      }
+      localStorage.removeItem("verriere_config");
+      localStorage.removeItem("autosave_config");
     } catch (error) {
-      console.warn(
-        "⚠️ Impossible de charger la configuration sauvegardée :",
-        error
-      );
+      console.warn("⚠️ Impossible de nettoyer le stockage :", error);
     }
+
+    // try {
+    //   // Essaie de charger la dernière configuration
+    //   const loaded = this.configModel.loadFromStorage();
+    //   if (loaded) {
+    //     console.log("📂 Configuration chargée depuis le stockage");
+    //   } else {
+    //     console.log("📋 Utilisation de la configuration par défaut");
+    //   }
+    // } catch (error) {
+    //   console.warn(
+    //     "⚠️ Impossible de charger la configuration sauvegardée :",
+    //     error
+    //   );
+    // }
   }
 
   /**
@@ -388,7 +398,8 @@ class VerrierApp {
    * Vérifie si la sauvegarde automatique est activée
    */
   autoSaveEnabled() {
-    return localStorage.getItem("verriere_autosave") !== "false";
+    // return localStorage.getItem("verriere_autosave") !== "false";
+    return false;
   }
 
   /**
