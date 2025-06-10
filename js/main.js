@@ -2,6 +2,7 @@ import { EventBus } from "./core/EventBus.js";
 import { ConfigModel } from "./core/ConfigModel.js";
 import { UIManager } from "./ui/UIManager.js";
 import { TableRenderer } from "./export/TableRenderer.js";
+import { PDFExporter } from "./export/PDFExporter.js";
 
 /**
  * Application principale - Point d'entrée
@@ -34,6 +35,9 @@ class VerrierApp {
       // 3. Initialisation du rendu des tableaux
       this.tableRenderer = new TableRenderer(this.eventBus);
       console.log("✅ TableRenderer initialisé");
+
+      this.pdfExporter = new PDFExporter(this.eventBus);
+      console.log("✅ PDFExporter initialisé");
 
       this.setupGlobalEvents();
 
@@ -326,8 +330,8 @@ class VerrierApp {
   isDevelopmentMode() {
     return (
       window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.search.includes("debug=true")
+      (window.location.hostname === "127.0.0.1" &&
+        window.location.search.includes("debug=true"))
     );
   }
 
