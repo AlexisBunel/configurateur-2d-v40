@@ -310,7 +310,7 @@ export class PDFExporter {
     const headers = ["Réf.", "Désignation", "Finition", "Long.", "Qté"];
     // Tu peux ajuster les largeurs au besoin :
     const colWidths = [20, 50, 35, 25, 15];
-    const colX = [20, 40, 90, 125, 150];
+    const colX = [20, 40, 90, 150, 180];
 
     // Style en-têtes
     doc.setFillColor(73, 80, 87); // Gris foncé
@@ -365,8 +365,8 @@ export class PDFExporter {
       // Données
       const rowData = [
         profile.ref,
-        this.truncateText(profile.description, 25),
-        this.truncateText(profile.finition, 18),
+        this.truncateText(profile.description, 35),
+        this.truncateText(profile.finition, 30),
         profile.longueur,
         profile.quantite,
       ];
