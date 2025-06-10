@@ -814,25 +814,26 @@ export class UIManager {
   /**
    * Affiche le modal d'ajout de traverse porte
    */
-  showAddTraverseModal() {
-    if (document.getElementById("add-traverse-form")) return;
+  showAddTraversePorteModal() {
+    if (document.getElementById("add-traverse-porte-form")) return;
 
     const config = this.configModel.state;
-    const maxHeight = config.height - 240;
+    const maxHeight = (config.porte?.porteHeight || 2200) - 240;
+    const withTierce =
+      config.porte?.withTierce === true || config.porte?.withTierce === "true";
 
-    const form = this.createTraverseForm("add-traverse-form", {
-      title: "Ajouter une traverse",
-      heightMin: 240,
+    const form = this.createTraversePorteForm("add-traverse-porte-form", {
+      title: "Ajouter une traverse sur la porte",
+      heightMin: 200,
       heightMax: maxHeight,
-      modulesCount: config.modulesCount,
-
-      // ✅ AJOUT : Passer les infos sur la porte
-      hasPorte: config.type === "porte",
-      porteIndex: config.porteIndex,
-
+      hastierce: withTierce,
       onSubmit: (data) => {
         try {
-          this.configModel.addTraverse(data.height, data.modules);
+          this.configModel.addTraversePorte(data.height, {
+            type: data.type,
+            onPorte: data.onPorte,
+            onTierce: data.onTierce,
+          });
           this.eventBus.emit("configChanged", this.configModel.getConfig());
           form.remove();
         } catch (error) {
@@ -843,7 +844,7 @@ export class UIManager {
     });
 
     document
-      .getElementById("add-traverse")
+      .getElementById("add-traverse-porte")
       .insertAdjacentElement("afterend", form);
   }
 
