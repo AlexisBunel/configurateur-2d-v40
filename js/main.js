@@ -35,10 +35,8 @@ class VerrierApp {
       this.tableRenderer = new TableRenderer(this.eventBus);
       console.log("✅ TableRenderer initialisé");
 
-      // 3. Configuration des événements globaux
       this.setupGlobalEvents();
 
-      // 4. Chargement éventuel d'une configuration sauvegardée
       this.loadSavedConfig();
 
       // 5. Validation initiale et mise à jour

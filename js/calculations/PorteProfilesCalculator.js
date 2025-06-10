@@ -35,7 +35,14 @@ export class PorteProfilesCalculator {
     const thb40Profiles = this.calculateTHB40Profiles(config);
     profiles.push(...thb40Profiles);
 
-    // 6. PARCLOSES PATP65 (Reprennent les mêmes longueurs, ajustées si imposte)
+    // 6. TRAVERSES INTERMÉDIAIRES TI28 et TI37
+    const traversesIntermediaires = this.calculateTraversesIntermediaires(
+      config,
+      thb40Profiles
+    );
+    profiles.push(...traversesIntermediaires);
+
+    // 7. PARCLOSES PATP65 (Reprennent les mêmes longueurs, ajustées si imposte)
     const patp65Profiles = this.calculatePATP65(
       config,
       ptciv51Profiles,
@@ -474,6 +481,107 @@ export class PorteProfilesCalculator {
   }
 
   /**
+   * Calcule les traverses intermédiaires TI28 et TI37
+   */
+  static calculateTraversesIntermediaires(config, thb40Profiles) {
+    const profiles = [];
+    const { traversesPorte } = config;
+
+    if (!traversesPorte || traversesPorte.length === 0) {
+      console.log("🔍 Aucune traverse intermédiaire configurée");
+      return profiles;
+    }
+
+    console.log("🔧 Calcul traverses intermédiaires TI28/TI37");
+
+    // Déterminer les longueurs porte et tierce depuis THB40
+    let longueurPorteTHB40 = 0;
+    let longueurTierceTHB40 = 0;
+
+    // Pour déterminer quelle longueur correspond à la porte vs tierce,
+    // on utilise la logique inverse de calculateTHB40Profiles
+    const { porte } = config;
+    const isVisible = porte.charniereType === "visible";
+    const isSerpen35m = porte.serrure === "SERPEN35M";
+    const porteWidth = porte.porteWidth || 0;
+    const tierceWidth = porte.tierceWidth || 0;
+    const withTierce = porte.withTierce === true || porte.withTierce === "true";
+
+    // Calculer la longueur attendue pour la porte
+    if (isVisible) {
+      longueurPorteTHB40 = isSerpen35m
+        ? porteWidth - 40 - 66
+        : porteWidth - 40 - 40;
+    } else {
+      longueurPorteTHB40 = isSerpen35m
+        ? porteWidth - 53 - 66
+        : porteWidth - 53 - 40;
+    }
+
+    // Calculer la longueur attendue pour la tierce (si applicable)
+    if (withTierce) {
+      if (isVisible) {
+        longueurTierceTHB40 = tierceWidth - 40 - 40;
+      } else {
+        longueurTierceTHB40 = tierceWidth - 53 - 40;
+      }
+    }
+
+    console.log(
+      `📐 Longueurs THB40 calculées - Porte: ${longueurPorteTHB40}mm, Tierce: ${longueurTierceTHB40}mm`
+    );
+
+    // Grouper les traverses par référence et longueur
+    const traversesMap = new Map();
+
+    traversesPorte.forEach((traverse) => {
+      const { type, onPorte, onTierce } = traverse;
+      const ref = type === "28" ? "TI28" : "TI37";
+
+      // Déterminer la longueur selon l'emplacement
+      let longueur = 0;
+      if (onPorte) {
+        longueur = longueurPorteTHB40 - 2;
+      } else if (onTierce && withTierce) {
+        longueur = longueurTierceTHB40 - 2;
+      }
+
+      if (longueur > 0) {
+        const key = `${ref}_${longueur}`;
+        const current = traversesMap.get(key) || { ref, longueur, quantite: 0 };
+        current.quantite += 1;
+        traversesMap.set(key, current);
+
+        console.log(
+          `🔧 ${ref}: +1 traverse de ${longueur}mm (${
+            onPorte ? "porte" : "tierce"
+          })`
+        );
+      }
+    });
+
+    // Créer les profils
+    traversesMap.forEach((traverse) => {
+      profiles.push({
+        ref: traverse.ref,
+        description:
+          traverse.ref === "TI28"
+            ? "Traverse intermédiaire 28"
+            : "Traverse intermédiaire 37",
+        longueur: traverse.longueur,
+        quantite: traverse.quantite,
+        category: "traverse",
+        type: "porte",
+      });
+      console.log(
+        `🔧 ${traverse.ref}: ${traverse.quantite} traverse(s) de ${traverse.longueur}mm`
+      );
+    });
+
+    return profiles;
+  }
+
+  /**
    * Calcule les parcloses PATP65 (reprennent les longueurs des PTCIV51 + PTPV51)
    */
   static calculatePATP65(config, ptciv51Profiles, ptpv51Profiles) {
@@ -616,6 +724,22 @@ export class PorteProfilesCalculator {
       );
     }
 
+    // Vérification spécifique traverses intermédiaires
+    const ti28Count = profiles
+      .filter((p) => p.ref === "TI28")
+      .reduce((sum, p) => sum + p.quantite, 0);
+    const ti37Count = profiles
+      .filter((p) => p.ref === "TI37")
+      .reduce((sum, p) => sum + p.quantite, 0);
+    const traversesPorteCount = config.traversesPorte?.length || 0;
+    const totalTI = ti28Count + ti37Count;
+
+    if (totalTI !== traversesPorteCount) {
+      warnings.push(
+        `Total traverses intermédiaires incorrect: ${totalTI}, attendu: ${traversesPorteCount}`
+      );
+    }
+
     // Vérification spécifique imposte
     const withImposte =
       config.porte?.withImposte === true ||
@@ -696,6 +820,8 @@ export class PorteProfilesCalculator {
         totalTHB40: totals.THB40
           ? `${(totals.THB40 / 1000).toFixed(2)}m`
           : "0m",
+        totalTI28: totals.TI28 ? `${(totals.TI28 / 1000).toFixed(2)}m` : "0m",
+        totalTI37: totals.TI37 ? `${(totals.TI37 / 1000).toFixed(2)}m` : "0m",
         valid: validation.valid,
       },
     };
