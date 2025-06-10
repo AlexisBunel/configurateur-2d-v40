@@ -27,13 +27,144 @@ export class PorteProfilesCalculator {
     const imposteProfiles = this.calculateImposteProfiles(config);
     profiles.push(...imposteProfiles);
 
-    // 4. PARCLOSES PATP65 (Reprennent les mêmes longueurs, ajustées si imposte)
+    // 4. PROFILS DE LA PORTE (POCI53, PO40, PO66)
+    const porteOuvranteProfiles = this.calculatePorteOuvranteProfiles(config);
+    profiles.push(...porteOuvranteProfiles);
+
+    // 5. TRAVERSES HAUTE ET BASSE DE LA PORTE (THB40)
+    const thb40Profiles = this.calculateTHB40Profiles(config);
+    profiles.push(...thb40Profiles);
+
+    // 6. PARCLOSES PATP65 (Reprennent les mêmes longueurs, ajustées si imposte)
     const patp65Profiles = this.calculatePATP65(
       config,
       ptciv51Profiles,
       ptpv51Profiles
     );
     profiles.push(...patp65Profiles);
+
+    return profiles;
+  }
+
+  /**
+   * Calcule les profils PTCIV51 (charnières invisibles)
+   */
+  static calculatePTCIV51(config) {
+    const profiles = [];
+    const { height, porte } = config;
+
+    // Conditions pour PTCIV51
+    const isInvisible = porte?.charniereType === "invisible";
+    const withTierce =
+      porte?.withTierce === true || porte?.withTierce === "true";
+
+    if (!isInvisible) {
+      console.log("🔍 PTCIV51: Charnières visibles, aucun profil PTCIV51");
+      return profiles;
+    }
+
+    // Quantité selon la tierce
+    const quantite = withTierce ? 2 : 1;
+
+    console.log(
+      `🔧 PTCIV51: Charnières invisibles, ${
+        withTierce ? "avec" : "sans"
+      } tierce → ${quantite} profil(s)`
+    );
+
+    profiles.push({
+      ref: "PTCIV51",
+      description: "Profil traverse charnières invisibles",
+      longueur: height,
+      quantite: quantite,
+      category: "structure",
+      type: "dormant",
+    });
+
+    return profiles;
+  }
+
+  /**
+   * Calcule les profils PTPV51 (charnières visibles + imposte)
+   */
+  static calculatePTPV51(config) {
+    const profiles = [];
+    const { height, porte, modules, porteIndex } = config;
+
+    const isVisible = porte?.charniereType === "visible";
+    const isInvisible = porte?.charniereType === "invisible";
+    const withTierce =
+      porte?.withTierce === true || porte?.withTierce === "true";
+    const withImposte =
+      porte?.withImposte === true || porte?.withImposte === "true";
+
+    console.log("🔍 PTPV51 - Conditions:", {
+      isVisible,
+      isInvisible,
+      withTierce,
+      withImposte,
+    });
+
+    // CAS 1: Charnières visibles
+    if (isVisible) {
+      const quantite = 2; // Toujours 2 pour charnières visibles
+      console.log(
+        `🔧 PTPV51: Charnières visibles → ${quantite} profils de ${height}mm`
+      );
+
+      profiles.push({
+        ref: "PTPV51",
+        description: "Profil traverse paumelles visibles",
+        longueur: height,
+        quantite: quantite,
+        category: "structure",
+        type: "dormant",
+      });
+    }
+
+    // CAS 2: Charnières invisibles SANS tierce
+    if (isInvisible && !withTierce) {
+      const quantite = 1;
+      console.log(
+        `🔧 PTPV51: Charnières invisibles sans tierce → ${quantite} profil de ${height}mm`
+      );
+
+      profiles.push({
+        ref: "PTPV51",
+        description: "Profil traverse paumelles visibles",
+        longueur: height,
+        quantite: quantite,
+        category: "structure",
+        type: "dormant",
+      });
+    }
+
+    // CAS 3: Imposte (indépendant des charnières)
+    if (withImposte) {
+      // Récupérer la largeur du module porte
+      const modulePorteIndex = porteIndex - 1; // porteIndex est 1-based
+      const modulePorte = modules?.[modulePorteIndex];
+
+      if (modulePorte && modulePorte.width) {
+        const longueurImposte = modulePorte.width;
+        console.log(
+          `🔧 PTPV51: Imposte → 1 profil de ${longueurImposte}mm (largeur module ${porteIndex})`
+        );
+
+        profiles.push({
+          ref: "PTPV51",
+          description: "Profil traverse paumelles visibles (imposte)",
+          longueur: longueurImposte,
+          quantite: 1,
+          category: "structure",
+          type: "dormant",
+        });
+      } else {
+        console.warn(
+          `⚠️ Module porte (index ${modulePorteIndex}) non trouvé pour imposte`
+        );
+      }
+    }
 
     return profiles;
   }
@@ -98,12 +229,12 @@ export class PorteProfilesCalculator {
 
     const { porte, height } = config;
 
-    // ===== Calcul hauteur d'ouverture =====
+    // Calcul hauteur d'ouverture
     const hauteur = porte?.withImposte
       ? (porte?.porteHeight || 0) + 15 + 51
       : height || 0;
 
-    // ===== Calcul largeur d'ouverture =====
+    // Calcul largeur d'ouverture
     const porteWidth = porte?.porteWidth || 0;
     const charniereOffset = porte?.charniereType === "invisible" ? 6 : 10;
     const withTierce =
@@ -125,123 +256,218 @@ export class PorteProfilesCalculator {
   }
 
   /**
-   * Calcule les profils PTCIV51 (charnières invisibles)
+   * Calcule les profils de la porte ouvrante (POCI53, PO40, PO66)
    */
-  static calculatePTCIV51(config) {
+  static calculatePorteOuvranteProfiles(config) {
     const profiles = [];
-    const { height, porte } = config;
+    const { porte } = config;
 
-    // Conditions pour PTCIV51
-    const isInvisible = porte?.charniereType === "invisible";
-    const withTierce =
-      porte?.withTierce === true || porte?.withTierce === "true";
-
-    if (!isInvisible) {
-      console.log("🔍 PTCIV51: Charnières visibles, aucun profil PTCIV51");
+    if (!porte) {
+      console.log("🔍 Pas de configuration porte");
       return profiles;
     }
 
-    // Quantité selon la tierce
-    const quantite = withTierce ? 2 : 1;
+    console.log("🚪 Calcul profils porte ouvrante");
 
-    console.log(
-      `🔧 PTCIV51: Charnières invisibles, ${
-        withTierce ? "avec" : "sans"
-      } tierce → ${quantite} profil(s)`
-    );
+    const isVisible = porte.charniereType === "visible";
+    const isInvisible = porte.charniereType === "invisible";
+    const withTierce = porte.withTierce === true || porte.withTierce === "true";
+    const isSerpen35m = porte.serrure === "SERPEN35M";
+    const longueurPorte = (porte.porteHeight || 0) - 5;
 
-    profiles.push({
-      ref: "PTCIV51",
-      description: "Profil traverse charnières invisibles",
-      longueur: height,
-      quantite: quantite,
-      category: "structure",
-      type: "dormant",
+    console.log("🔍 Conditions porte:", {
+      isVisible,
+      isInvisible,
+      withTierce,
+      isSerpen35m,
+      longueurPorte,
     });
+
+    // CALCUL POCI53
+    let quantitePOCI53 = 0;
+    if (isInvisible) {
+      quantitePOCI53 = withTierce ? 2 : 1;
+    }
+
+    if (quantitePOCI53 > 0) {
+      profiles.push({
+        ref: "POCI53",
+        description: "Profil ouvrant charnière invisible",
+        longueur: longueurPorte,
+        quantite: quantitePOCI53,
+        category: "structure",
+        type: "porte",
+      });
+      console.log(
+        `🔧 POCI53: ${quantitePOCI53} profil(s) de ${longueurPorte}mm`
+      );
+    }
+
+    // CALCUL PO40
+    let quantitePO40 = 0;
+
+    if (!withTierce) {
+      // Sans tierce
+      if (isVisible) {
+        quantitePO40 = isSerpen35m ? 1 : 2;
+      } else if (isInvisible) {
+        quantitePO40 = isSerpen35m ? 0 : 1;
+      }
+    } else {
+      // Avec tierce
+      if (isVisible) {
+        quantitePO40 = isSerpen35m ? 3 : 4;
+      } else if (isInvisible) {
+        quantitePO40 = isSerpen35m ? 1 : 2;
+      }
+    }
+
+    if (quantitePO40 > 0) {
+      profiles.push({
+        ref: "PO40",
+        description: "Profil ouvrant 40",
+        longueur: longueurPorte,
+        quantite: quantitePO40,
+        category: "structure",
+        type: "porte",
+      });
+      console.log(`🔧 PO40: ${quantitePO40} profil(s) de ${longueurPorte}mm`);
+    }
+
+    // CALCUL PO66
+    const quantitePO66 = isSerpen35m ? 1 : 0;
+
+    if (quantitePO66 > 0) {
+      profiles.push({
+        ref: "PO66",
+        description: "Profil ouvrant 66",
+        longueur: longueurPorte,
+        quantite: quantitePO66,
+        category: "structure",
+        type: "porte",
+      });
+      console.log(`🔧 PO66: ${quantitePO66} profil(s) de ${longueurPorte}mm`);
+    }
+
+    // Vérification totaux
+    const totalProfiles = quantitePOCI53 + quantitePO40 + quantitePO66;
+    const expectedTotal = withTierce ? 4 : 2;
+
+    if (totalProfiles !== expectedTotal) {
+      console.warn(
+        `⚠️ Total profils porte: ${totalProfiles}, attendu: ${expectedTotal}`
+      );
+    } else {
+      console.log(`✅ Total profils porte: ${totalProfiles} (conforme)`);
+    }
 
     return profiles;
   }
 
   /**
-   * Calcule les profils PTPV51 (charnières visibles + imposte)
+   * Calcule les traverses haute et basse THB40
    */
-  static calculatePTPV51(config) {
+  static calculateTHB40Profiles(config) {
     const profiles = [];
-    const { height, porte, modules, porteIndex } = config;
+    const { porte } = config;
 
-    const isVisible = porte?.charniereType === "visible";
-    const isInvisible = porte?.charniereType === "invisible";
-    const withTierce =
-      porte?.withTierce === true || porte?.withTierce === "true";
-    const withImposte =
-      porte?.withImposte === true || porte?.withImposte === "true";
+    if (!porte) {
+      console.log("🔍 Pas de configuration porte pour THB40");
+      return profiles;
+    }
 
-    console.log("🔍 PTPV51 - Conditions:", {
-      isVisible,
-      isInvisible,
-      withTierce,
-      withImposte,
+    console.log("🔧 Calcul traverses THB40");
+
+    const isVisible = porte.charniereType === "visible";
+    const isInvisible = porte.charniereType === "invisible";
+    const withTierce = porte.withTierce === true || porte.withTierce === "true";
+    const isSerpen35m = porte.serrure === "SERPEN35M";
+    const porteWidth = porte.porteWidth || 0;
+    const tierceWidth = porte.tierceWidth || 0;
+
+    // Collecter les longueurs avec leurs quantités
+    const longueurMap = new Map();
+
+    // TRAVERSES DE LA PARTIE PORTE
+    let largeurPorteInterne;
+
+    if (isVisible) {
+      // Charnières visibles : toujours PO40 à gauche
+      if (isSerpen35m) {
+        // PO40 (40) + PO66 (66)
+        largeurPorteInterne = porteWidth - 40 - 66;
+      } else {
+        // PO40 (40) + PO40 (40)
+        largeurPorteInterne = porteWidth - 40 - 40;
+      }
+    } else if (isInvisible) {
+      // Charnières invisibles : toujours POCI53 à gauche
+      if (isSerpen35m) {
+        // POCI53 (53) + PO66 (66)
+        largeurPorteInterne = porteWidth - 53 - 66;
+      } else {
+        // POCI53 (53) + PO40 (40)
+        largeurPorteInterne = porteWidth - 53 - 40;
+      }
+    }
+
+    console.log(
+      `🔧 THB40 porte: largeur interne = ${porteWidth} - profils = ${largeurPorteInterne}mm`
+    );
+
+    // Ajouter 2 traverses pour la partie porte
+    const currentQty = longueurMap.get(largeurPorteInterne) || 0;
+    longueurMap.set(largeurPorteInterne, currentQty + 2);
+
+    // TRAVERSES DE LA PARTIE TIERCE (si applicable)
+    if (withTierce) {
+      let largeurTierceInterne;
+
+      if (isVisible) {
+        // Charnières visibles : profils PO40 des deux côtés pour la tierce
+        largeurTierceInterne = tierceWidth - 40 - 40;
+      } else if (isInvisible) {
+        // Charnières invisibles : profils POCI53 côté charnière, PO40 côté opposé
+        largeurTierceInterne = tierceWidth - 53 - 40;
+      }
+
+      console.log(
+        `🔧 THB40 tierce: largeur interne = ${tierceWidth} - profils = ${largeurTierceInterne}mm`
+      );
+
+      // Ajouter 2 traverses pour la partie tierce
+      const currentTierceQty = longueurMap.get(largeurTierceInterne) || 0;
+      longueurMap.set(largeurTierceInterne, currentTierceQty + 2);
+    }
+
+    // CRÉER LES PROFILS GROUPÉS PAR LONGUEUR
+    longueurMap.forEach((quantite, longueur) => {
+      if (longueur > 0 && quantite > 0) {
+        profiles.push({
+          ref: "THB40",
+          description: "Traverse haute et basse 40",
+          longueur: longueur,
+          quantite: quantite,
+          category: "traverse",
+          type: "porte",
+        });
+        console.log(`🔧 THB40: ${quantite} traverse(s) de ${longueur}mm`);
+      }
     });
 
-    // ===== CAS 1: Charnières visibles =====
-    if (isVisible) {
-      const quantite = 2; // Toujours 2 pour charnières visibles
-      console.log(
-        `🔧 PTPV51: Charnières visibles → ${quantite} profils de ${height}mm`
+    // Vérification totaux
+    const totalTHB40 = Array.from(longueurMap.values()).reduce(
+      (sum, qty) => sum + qty,
+      0
+    );
+    const expectedTHB40 = withTierce ? 4 : 2;
+
+    if (totalTHB40 !== expectedTHB40) {
+      console.warn(
+        `⚠️ Total traverses THB40: ${totalTHB40}, attendu: ${expectedTHB40}`
       );
-
-      profiles.push({
-        ref: "PTPV51",
-        description: "Profil traverse paumelles visibles",
-        longueur: height,
-        quantite: quantite,
-        category: "structure",
-        type: "dormant",
-      });
-    }
-
-    // ===== CAS 2: Charnières invisibles SANS tierce =====
-    if (isInvisible && !withTierce) {
-      const quantite = 1;
-      console.log(
-        `🔧 PTPV51: Charnières invisibles sans tierce → ${quantite} profil de ${height}mm`
-      );
-
-      profiles.push({
-        ref: "PTPV51",
-        description: "Profil traverse paumelles visibles",
-        longueur: height,
-        quantite: quantite,
-        category: "structure",
-        type: "dormant",
-      });
-    }
-
-    // ===== CAS 3: Imposte (indépendant des charnières) =====
-    if (withImposte) {
-      // Récupérer la largeur du module porte
-      const modulePorteIndex = porteIndex - 1; // porteIndex est 1-based
-      const modulePorte = modules?.[modulePorteIndex];
-
-      if (modulePorte && modulePorte.width) {
-        const longueurImposte = modulePorte.width;
-        console.log(
-          `🔧 PTPV51: Imposte → 1 profil de ${longueurImposte}mm (largeur module ${porteIndex})`
-        );
-
-        profiles.push({
-          ref: "PTPV51",
-          description: "Profil traverse paumelles visibles (imposte)",
-          longueur: longueurImposte,
-          quantite: 1,
-          category: "structure",
-          type: "dormant",
-        });
-      } else {
-        console.warn(
-          `⚠️ Module porte (index ${modulePorteIndex}) non trouvé pour imposte`
-        );
-      }
+    } else {
+      console.log(`✅ Total traverses THB40: ${totalTHB40} (conforme)`);
     }
 
     return profiles;
@@ -356,6 +582,40 @@ export class PorteProfilesCalculator {
       );
     }
 
+    // Vérification spécifique profils porte
+    const poci53Count = profiles
+      .filter((p) => p.ref === "POCI53")
+      .reduce((sum, p) => sum + p.quantite, 0);
+    const po40Count = profiles
+      .filter((p) => p.ref === "PO40")
+      .reduce((sum, p) => sum + p.quantite, 0);
+    const po66Count = profiles
+      .filter((p) => p.ref === "PO66")
+      .reduce((sum, p) => sum + p.quantite, 0);
+
+    const totalPorteProfiles = poci53Count + po40Count + po66Count;
+    const withTierce =
+      config.porte?.withTierce === true || config.porte?.withTierce === "true";
+    const expectedPorteTotal = withTierce ? 4 : 2;
+
+    if (totalPorteProfiles !== expectedPorteTotal) {
+      warnings.push(
+        `Total profils porte incorrect: ${totalPorteProfiles}, attendu: ${expectedPorteTotal}`
+      );
+    }
+
+    // Vérification spécifique traverses THB40
+    const thb40Count = profiles
+      .filter((p) => p.ref === "THB40")
+      .reduce((sum, p) => sum + p.quantite, 0);
+    const expectedTHB40 = withTierce ? 4 : 2;
+
+    if (thb40Count !== expectedTHB40) {
+      warnings.push(
+        `Total traverses THB40 incorrect: ${thb40Count}, attendu: ${expectedTHB40}`
+      );
+    }
+
     // Vérification spécifique imposte
     const withImposte =
       config.porte?.withImposte === true ||
@@ -427,6 +687,14 @@ export class PorteProfilesCalculator {
           : "0m",
         totalPAIP65: totals.PAIP65
           ? `${(totals.PAIP65 / 1000).toFixed(2)}m`
+          : "0m",
+        totalPOCI53: totals.POCI53
+          ? `${(totals.POCI53 / 1000).toFixed(2)}m`
+          : "0m",
+        totalPO40: totals.PO40 ? `${(totals.PO40 / 1000).toFixed(2)}m` : "0m",
+        totalPO66: totals.PO66 ? `${(totals.PO66 / 1000).toFixed(2)}m` : "0m",
+        totalTHB40: totals.THB40
+          ? `${(totals.THB40 / 1000).toFixed(2)}m`
           : "0m",
         valid: validation.valid,
       },
