@@ -1,8 +1,11 @@
-// ===== js/calculations/DebitsCalculator.js =====
+// ===== Mise à jour de js/calculations/DebitsCalculator.js =====
+// ===== Section à ajouter après l'import des modules =====
+
 import { References } from "../data/References.js";
 import { PorteCalculator } from "./PorteCalculator.js";
 import { PC40Calculator } from "./PC40Calculator.js";
 import { PT40Calculator } from "./PT40Calculator.js";
+import { PorteProfilesCalculator } from "./PorteProfilesCalculator.js";
 
 export class DebitsCalculator {
   /**
@@ -132,6 +135,54 @@ export class DebitsCalculator {
       });
     }
 
+    // ===== CALCUL PROFILS DE PORTE =====
+    if (config.type === "porte") {
+      try {
+        const porteProfilesReport =
+          PorteProfilesCalculator.generateReport(config);
+
+        console.log("📊 Rapport Profils Porte:", porteProfilesReport);
+
+        // Ajouter les lignes des profils de porte
+        porteProfilesReport.tableLines.forEach((line) => {
+          profiles.push({
+            ref: line.ref,
+            description: line.description,
+            finition: this.getFinishDescription(
+              config.options?.colorProfile || "noir"
+            ),
+            length: line.length,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            totalPrice: line.totalPrice,
+            category: line.category,
+          });
+        });
+
+        // Afficher les avertissements s'il y en a
+        if (porteProfilesReport.validation.warnings.length > 0) {
+          console.warn(
+            "⚠️ Avertissements Profils Porte:",
+            porteProfilesReport.validation.warnings
+          );
+        }
+      } catch (error) {
+        console.error("❌ Erreur calcul Profils Porte:", error);
+
+        // En cas d'erreur, ajouter des entrées par défaut
+        profiles.push({
+          ref: "PTPV51",
+          description: "PTPV51 - Erreur de calcul",
+          finition: "Standard",
+          length: 0,
+          quantity: 0,
+          unitPrice: 0,
+          totalPrice: 0,
+          category: "structure",
+        });
+      }
+    }
+
     return profiles;
   }
 
@@ -205,6 +256,21 @@ export class DebitsCalculator {
     const negativeLength = debits.profiles.find((p) => p.length < 0);
     if (negativeLength) {
       errors.push(`Longueur négative détectée: ${negativeLength.ref}`);
+    }
+
+    // Vérification spécifique aux profils de porte
+    if (config.type === "porte") {
+      const ptciv51Items = debits.profiles.filter((p) => p.ref === "PTCIV51");
+      const ptpv51Items = debits.profiles.filter((p) => p.ref === "PTPV51");
+      const patp65Items = debits.profiles.filter((p) => p.ref === "PATP65");
+
+      // Vérifier que si on a des profils PTCIV51 ou PTPV51, on a aussi des PATP65
+      if (
+        (ptciv51Items.length > 0 || ptpv51Items.length > 0) &&
+        patp65Items.length === 0
+      ) {
+        warnings.push("Profils de porte sans parcloses PATP65");
+      }
     }
 
     return {
@@ -304,7 +370,7 @@ export class DebitsCalculator {
   static getFinishDescription(colorProfile) {
     const colorMap = {
       noir: "Laqué noir RAL 9005 granité",
-      gris: "Laqué girs RAL 7016 granité",
+      gris: "Laqué gris RAL 7016 granité",
       blanc: "Laqué blanc RAL 9003 granité",
     };
     return colorMap[colorProfile] || "RAL 9005 granité";
