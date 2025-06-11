@@ -192,6 +192,8 @@ export class DebitsCalculator {
    */
   static calculateAccessories(config) {
     console.log("🔧 Calcul des accessoires");
+    console.log("Config complète reçue:", config);
+    console.log("Options config:", config.options);
 
     try {
       const accessoriesReport = AccessoriesCalculator.generateReport(config);
@@ -203,8 +205,8 @@ export class DebitsCalculator {
         ref: line.ref,
         description: line.description,
         quantity: line.quantity,
-        length: line.length,
-        finition: "-",
+        length: line.length, // CORRECTION: Garder le formatage fait par AccessoriesCalculator
+        finition: line.finition || "-", // CORRECTION: Utiliser la finition calculée
         unitPrice: line.unitPrice,
         totalPrice: line.totalPrice,
         category: line.category,

@@ -28,12 +28,14 @@ export class AccessoriesCalculator {
     }
 
     const jtpe48 = this.calculateJTPE48(config);
-    if (jtpe48) {
+    if (jtpe48.quantity > 0) {
+      // CORRECTION: Vérifier la quantité au lieu de l'existence
       accessories.push(jtpe48);
     }
 
     const jrlp47 = this.calculateJRLP47(config);
-    if (jrlp47) {
+    if (jrlp47.quantity > 0) {
+      // CORRECTION: Vérifier la quantité au lieu de l'existence
       accessories.push(jrlp47);
     }
 
@@ -617,17 +619,33 @@ export class AccessoriesCalculator {
 
   static calculateJTPE48(config) {
     console.log("🔧 Calcul JTPE48");
+    console.log("Config remplissage:", config.options);
 
-    const remplissageEp = config.options?.remplissageEp || 6;
+    // CORRECTION: Convertir en nombre ET gérer les deux types
+    const remplissageEpRaw = config.options?.remplissageEp || 6;
+    const remplissageEp = parseInt(remplissageEpRaw, 10);
     const colorJoint = config.options?.colorJoint || "noir";
+
+    console.log(
+      `📊 Épaisseur remplissage RAW: ${remplissageEpRaw} (type: ${typeof remplissageEpRaw})`
+    );
+    console.log(
+      `📊 Épaisseur remplissage CONVERTED: ${remplissageEp}mm (type: ${typeof remplissageEp})`
+    );
+    console.log(`🎨 Couleur joint: ${colorJoint}`);
+
     let longueur = null;
 
+    // CORRECTION: Comparaison stricte avec nombre
     if (remplissageEp === 8) {
+      console.log("✅ Condition remplissageEp === 8 VRAIE");
       // Calculer somme longueurs profils "structure"
       let totalStructureLength = 0;
 
       // PC40 (structure)
-      totalStructureLength += this.calculatePC40Length(config);
+      const pc40Length = this.calculatePC40Length(config);
+      totalStructureLength += pc40Length;
+      console.log(`📏 PC40 structure: ${pc40Length}mm`);
 
       // PT40 (structure) - multiplier par 2
       const pt40Length = this.calculatePT40StructureLength(config);
@@ -638,18 +656,25 @@ export class AccessoriesCalculator {
 
       // Profils porte (structure)
       if (config.type === "porte") {
-        totalStructureLength += this.calculatePorteStructureLength(config);
+        const porteStructureLength = this.calculatePorteStructureLength(config);
+        totalStructureLength += porteStructureLength;
+        console.log(`📏 Porte structure: ${porteStructureLength}mm`);
       }
 
       // Convertir en mètres et arrondir au supérieur
       longueur = Math.ceil(totalStructureLength / 1000);
-      console.log(`📊 JTPE48: ${totalStructureLength}mm → ${longueur}m`);
+      console.log(`📊 JTPE48: ${totalStructureLength}mm → ${longueur}ml`);
+    } else {
+      console.log(
+        `❌ Condition remplissageEp === 8 FAUSSE (valeur: ${remplissageEp})`
+      );
+      longueur = 0;
     }
 
     return {
       ref: "JTPE48",
       description: "Joint plat",
-      quantity: 1,
+      quantity: longueur > 0 ? 1 : 0,
       length: longueur,
       unitPrice: 0,
       totalPrice: 0,
@@ -658,62 +683,96 @@ export class AccessoriesCalculator {
     };
   }
 
-  /**
-   * Calcule le joint JRLP47
-   * @param {Object} config - Configuration
-   * @returns {Object} Données du joint
-   */
+  // CORRECTION - calculateJRLP47 avec conversion de type
   static calculateJRLP47(config) {
     console.log("🔧 Calcul JRLP47");
+    console.log("Config remplissage:", config.options);
 
-    const remplissageEp = config.options?.remplissageEp || 6;
+    // CORRECTION: Convertir en nombre ET gérer les deux types
+    const remplissageEpRaw = config.options?.remplissageEp || 6;
+    const remplissageEp = parseInt(remplissageEpRaw, 10);
     const colorJoint = config.options?.colorJoint || "noir";
+
+    console.log(
+      `📊 Épaisseur remplissage RAW: ${remplissageEpRaw} (type: ${typeof remplissageEpRaw})`
+    );
+    console.log(
+      `📊 Épaisseur remplissage CONVERTED: ${remplissageEp}mm (type: ${typeof remplissageEp})`
+    );
+    console.log(`🎨 Couleur joint: ${colorJoint}`);
+
     let longueur = null;
 
+    // CORRECTION: Comparaisons strictes avec nombres
     if (remplissageEp === 6) {
+      console.log("✅ Condition remplissageEp === 6 VRAIE");
       // Somme profils "structure" + "parclose", PT40/PAT40 × 2
       let totalLength = 0;
 
       // Structure
-      totalLength += this.calculatePC40Length(config);
+      const pc40Length = this.calculatePC40Length(config);
+      totalLength += pc40Length;
+      console.log(`📏 PC40: ${pc40Length}mm`);
+
       const pt40Length = this.calculatePT40StructureLength(config);
       totalLength += pt40Length * 2;
+      console.log(`📏 PT40: ${pt40Length}mm × 2`);
 
       if (config.type === "porte") {
-        totalLength += this.calculatePorteStructureLength(config);
+        const porteStructureLength = this.calculatePorteStructureLength(config);
+        totalLength += porteStructureLength;
+        console.log(`📏 Porte structure: ${porteStructureLength}mm`);
       }
 
       // Parcloses
-      totalLength += this.calculatePAC40Length(config);
+      const pac40Length = this.calculatePAC40Length(config);
+      totalLength += pac40Length;
+      console.log(`📏 PAC40: ${pac40Length}mm`);
+
       const pat40Length = this.calculatePAT40Length(config);
       totalLength += pat40Length * 2;
+      console.log(`📏 PAT40: ${pat40Length}mm × 2`);
 
       if (config.type === "porte") {
-        totalLength += this.calculatePorteParcloseLength(config);
+        const porteParcloseLength = this.calculatePorteParcloseLength(config);
+        totalLength += porteParcloseLength;
+        console.log(`📏 Porte parcloses: ${porteParcloseLength}mm`);
       }
 
       longueur = Math.ceil(totalLength / 1000);
-      console.log(`📊 JRLP47 (ep=6): ${totalLength}mm → ${longueur}m`);
+      console.log(`📊 JRLP47 (ep=6): ${totalLength}mm → ${longueur}ml`);
     } else if (remplissageEp === 8) {
+      console.log("✅ Condition remplissageEp === 8 VRAIE");
       // Somme profils "parclose", PAT40 × 2
       let totalParcloseLength = 0;
 
-      totalParcloseLength += this.calculatePAC40Length(config);
+      const pac40Length = this.calculatePAC40Length(config);
+      totalParcloseLength += pac40Length;
+      console.log(`📏 PAC40: ${pac40Length}mm`);
+
       const pat40Length = this.calculatePAT40Length(config);
       totalParcloseLength += pat40Length * 2;
+      console.log(`📏 PAT40: ${pat40Length}mm × 2`);
 
       if (config.type === "porte") {
-        totalParcloseLength += this.calculatePorteParcloseLength(config);
+        const porteParcloseLength = this.calculatePorteParcloseLength(config);
+        totalParcloseLength += porteParcloseLength;
+        console.log(`📏 Porte parcloses: ${porteParcloseLength}mm`);
       }
 
       longueur = Math.ceil(totalParcloseLength / 1000);
-      console.log(`📊 JRLP47 (ep=8): ${totalParcloseLength}mm → ${longueur}m`);
+      console.log(`📊 JRLP47 (ep=8): ${totalParcloseLength}mm → ${longueur}ml`);
+    } else {
+      console.log(
+        `❌ Aucune condition remplie pour remplissageEp: ${remplissageEp}`
+      );
+      longueur = 0;
     }
 
     return {
       ref: "JRLP47",
       description: "Joint bulle",
-      quantity: 1,
+      quantity: longueur > 0 ? 1 : 0,
       length: longueur,
       unitPrice: 0,
       totalPrice: 0,
@@ -741,7 +800,7 @@ export class AccessoriesCalculator {
       ref: accessory.ref,
       description: accessory.description,
       quantity: accessory.quantity,
-      length: accessory.length || "-", // Afficher "-" si pas de longueur
+      length: accessory.length ? `${accessory.length} ml` : "-", // Afficher "-" si pas de longueur
       unitPrice: accessory.unitPrice || 0,
       totalPrice: accessory.totalPrice || 0,
       category: accessory.category,
