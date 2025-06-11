@@ -507,6 +507,15 @@ export class UIManager {
     }
   }
 
+  updatePO66Visibility(config) {
+    if (config.type !== "porte") return;
+
+    const isSerpen35m = config.porte?.serrure === "SERPEN35M";
+
+    // Afficher/masquer la div form-po66 selon la serrure
+    this.toggleElement("#form-po66", isSerpen35m);
+  }
+
   /**
    * Met à jour la visibilité des sections selon le type
    */
@@ -517,8 +526,6 @@ export class UIManager {
     this.toggleSection("configuration-porte", isPorte);
     this.toggleSection("configuration-traverses-porte", isPorte);
     this.toggleSection("configuration-options-porte", isPorte);
-
-    // CORRECTION 2: Éléments spécifiques porte - chercher par ID et selector
     this.toggleElement("#label-modulePorte", isPorte);
     this.toggleElement("#modulePorte", isPorte);
 
@@ -528,7 +535,6 @@ export class UIManager {
         config.porte?.withImposte === true ||
         config.porte?.withImposte === "true";
 
-      // CORRECTION 1: Masquer/afficher le label ET le select du dormant
       this.toggleElement("#label-dormant", !withImposte);
       this.toggleElement("#dormant", !withImposte);
 
@@ -539,10 +545,8 @@ export class UIManager {
       this.toggleElement("#widthTierce", withTierce);
       this.toggleElement('label[for="widthTierce"]', withTierce);
 
-      // CORRECTION 2: Gestion du profil PO6622U selon la hauteur de porte
       this.updateProfileAvailability(config);
-
-      // CORRECTION 2: Mettre à jour les options du select porteIndex
+      this.updatePO66Visibility(config);
       this.updatePorteIndexOptions(config);
     }
   }

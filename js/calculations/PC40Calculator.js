@@ -409,12 +409,60 @@ export class PC40Calculator {
    * @returns {Array} Lignes formatées pour le tableau
    */
   static formatForTable(variantes, profileRef) {
+    // Importer References pour récupérer les vraies descriptions
+    import("../data/References.js").then((module) => {
+      // Sera disponible de manière asynchrone, mais on va faire plus simple
+    });
+
     const lines = [];
 
     variantes.forEach((variante) => {
+      // Déterminer la description de base selon la référence
+      let baseDescription;
+      if (profileRef === "PC40") {
+        baseDescription = "Profil cadre 40";
+      } else if (profileRef === "PAC40") {
+        baseDescription = "Parclose cadre 40";
+      } else {
+        baseDescription = variante.description;
+      }
+
+      // Ajouter les informations de position spécifiques
+      let fullDescription = baseDescription;
+
+      // Analyser le type pour ajouter la position
+      if (variante.type) {
+        switch (variante.type) {
+          case "vertical":
+            fullDescription += " - vertical";
+            break;
+          case "horizontal":
+            fullDescription += " - horizontal";
+            break;
+          case "horizontal_droite":
+            fullDescription += " - horizontal droite";
+            break;
+          case "horizontal_gauche":
+            fullDescription += " - horizontal gauche";
+            break;
+          case "horizontal_haut_gauche":
+            fullDescription += " - horizontal haut gauche";
+            break;
+          case "horizontal_haut_droite":
+            fullDescription += " - horizontal haut droite";
+            break;
+          case "horizontal_imposte":
+            fullDescription += " - horizontal imposte";
+            break;
+          default:
+            // Garder la description originale si type non reconnu
+            fullDescription = variante.description;
+        }
+      }
+
       lines.push({
         ref: profileRef,
-        description: variante.description,
+        description: fullDescription,
         length: variante.longueur,
         quantity: variante.quantite,
         unitPrice: 0, // Prix à définir plus tard

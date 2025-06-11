@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Texte qui tourne et rebondit</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: black;
+      }
+
+      .rotating-text {
+        position: absolute;
+        font-size: 50px;
+        font-weight: bold;
+        color: white;
+        animation: rotation 5s linear infinite;
+        pointer-events: none; /* pour éviter de bloquer la souris */
+      }
+
+      @keyframes rotation {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="rotating-text" id="movingText">CACA by Alexis BUNEL</div>
+
+    <script>
+      const text = document.getElementById("movingText");
+
+      let posX = 100;
+      let posY = 100;
+      let velocityX = 10;
+      let velocityY = 10;
+
+      function animate() {
+        const textRect = text.getBoundingClientRect();
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        posX += velocityX;
+        posY += velocityY;
+
+        // Collision avec les bords gauche/droit
+        if (posX <= 0 || posX + textRect.width >= windowWidth) {
+          velocityX *= -1;
+        }
+
+        // Collision avec les bords haut/bas
+        if (posY <= 0 || posY + textRect.height >= windowHeight) {
+          velocityY *= -1;
+        }
+
+        text.style.left = posX + "px";
+        text.style.top = posY + "px";
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    </script>
+  </body>
+</html>

@@ -286,19 +286,49 @@ export class PT40Calculator {
    * @returns {Array} Lignes formatées pour le tableau
    */
   static formatForTable(traverses) {
-    return traverses.map((traverse) => ({
-      ref: traverse.ref,
-      description: traverse.description,
-      length: traverse.longueur,
-      quantity: traverse.quantite,
-      unitPrice: 0, // Prix à définir plus tard
-      totalPrice: 0, // Prix à définir plus tard
-      category: traverse.category,
-      details: {
-        type: traverse.type,
-        originalDetails: traverse.details || {},
-      },
-    }));
+    return traverses.map((traverse) => {
+      // Déterminer la description de base selon la référence
+      let baseDescription;
+      if (traverse.ref === "PT40") {
+        baseDescription = "Profil traverse 40";
+      } else if (traverse.ref === "PAT40") {
+        baseDescription = "Parclose traverse 40";
+      } else {
+        baseDescription = traverse.description;
+      }
+
+      // Ajouter les informations de position spécifiques
+      let fullDescription = baseDescription;
+
+      // Analyser le type pour ajouter la position
+      if (traverse.type) {
+        switch (traverse.type) {
+          case "traverse_verticale":
+            fullDescription += " - verticale";
+            break;
+          case "traverse_horizontale":
+            fullDescription += " - horizontale";
+            break;
+          default:
+            // Garder la description originale si type non reconnu
+            fullDescription = traverse.description;
+        }
+      }
+
+      return {
+        ref: traverse.ref,
+        description: fullDescription,
+        length: traverse.longueur,
+        quantity: traverse.quantite,
+        unitPrice: 0, // Prix à définir plus tard
+        totalPrice: 0, // Prix à définir plus tard
+        category: traverse.category,
+        details: {
+          type: traverse.type,
+          originalDetails: traverse.details || {},
+        },
+      };
+    });
   }
 
   /**

@@ -5,6 +5,86 @@ export class PorteProfilesCalculator {
    * @param {Object} config - Configuration complète
    * @returns {Array} Liste des profils avec longueurs et quantités
    */
+
+  static calculateFinitionProfiles(config, allPorteProfiles) {
+    const profiles = [];
+
+    console.log("🔧 Calcul profils de finition PF23 et PF33");
+
+    // ===== CALCUL PF23 =====
+    // Somme des longueurs PTPV51 + PO40 + PO66 + PO6622U
+    let totalLengthPF23 = 0;
+
+    allPorteProfiles.forEach((profile) => {
+      if (["PTPV51", "PO40", "PO66", "PO6622U"].includes(profile.ref)) {
+        const totalLength = profile.longueur * profile.quantite;
+        totalLengthPF23 += totalLength;
+        console.log(
+          `📏 ${profile.ref}: ${profile.longueur}mm × ${profile.quantite} = ${totalLength}mm`
+        );
+      }
+    });
+
+    if (totalLengthPF23 > 0) {
+      const quantitePF23 = Math.ceil(totalLengthPF23 / 5000);
+      console.log(
+        `🔧 PF23: ${totalLengthPF23}mm total ÷ 5000 = ${quantitePF23} barre(s) de 5140mm`
+      );
+
+      profiles.push({
+        ref: "PF23",
+        description: "Profil de finition 23",
+        longueur: 5140, // Longueur imposée
+        quantite: quantitePF23,
+        category: "finition",
+        type: "porte",
+        details: {
+          totalLengthNeeded: totalLengthPF23,
+          calculation: `${totalLengthPF23}mm ÷ 5000 = ${quantitePF23} barre(s)`,
+        },
+      });
+    }
+
+    // ===== CALCUL PF33 =====
+    // Somme des longueurs PTCI51 + POCI53
+    let totalLengthPF33 = 0;
+
+    allPorteProfiles.forEach((profile) => {
+      if (["PTCI51", "POCI53"].includes(profile.ref)) {
+        const totalLength = profile.longueur * profile.quantite;
+        totalLengthPF33 += totalLength;
+        console.log(
+          `📏 ${profile.ref}: ${profile.longueur}mm × ${profile.quantite} = ${totalLength}mm`
+        );
+      }
+    });
+
+    if (totalLengthPF33 > 0) {
+      const quantitePF33 = Math.ceil(totalLengthPF33 / 5000);
+      console.log(
+        `🔧 PF33: ${totalLengthPF33}mm total ÷ 5000 = ${quantitePF33} barre(s) de 5140mm`
+      );
+
+      profiles.push({
+        ref: "PF33",
+        description: "Profil de finition 33",
+        longueur: 5140, // Longueur imposée
+        quantite: quantitePF33,
+        category: "finition",
+        type: "porte",
+        details: {
+          totalLengthNeeded: totalLengthPF33,
+          calculation: `${totalLengthPF33}mm ÷ 5000 = ${quantitePF33} barre(s)`,
+        },
+      });
+    }
+
+    console.log(
+      `✅ Profils de finition calculés: ${profiles.length} référence(s)`
+    );
+    return profiles;
+  }
+
   static calculatePorteProfiles(config) {
     const profiles = [];
 
@@ -49,6 +129,9 @@ export class PorteProfilesCalculator {
       ptpv51Profiles
     );
     profiles.push(...patp65Profiles);
+
+    const finitionProfiles = this.calculateFinitionProfiles(config, profiles);
+    profiles.push(...finitionProfiles);
 
     return profiles;
   }
@@ -281,12 +364,14 @@ export class PorteProfilesCalculator {
     const withTierce = porte.withTierce === true || porte.withTierce === "true";
     const isSerpen35m = porte.serrure === "SERPEN35M";
     const longueurPorte = (porte.porteHeight || 0) - 5;
+    const profileType = porte.profile || "po66";
 
     console.log("🔍 Conditions porte:", {
       isVisible,
       isInvisible,
       withTierce,
       isSerpen35m,
+      profileType,
       longueurPorte,
     });
 
@@ -345,15 +430,24 @@ export class PorteProfilesCalculator {
     const quantitePO66 = isSerpen35m ? 1 : 0;
 
     if (quantitePO66 > 0) {
+      // Choisir la référence selon la configuration
+      const profileRef = profileType === "po6622u" ? "PO6622U" : "PO66";
+      const profileDescription =
+        profileType === "po6622u"
+          ? "Profil ouvrant 66 usiné"
+          : "Profil ouvrant 66";
+
       profiles.push({
-        ref: "PO66",
-        description: "Profil ouvrant 66",
+        ref: profileRef,
+        description: profileDescription,
         longueur: longueurPorte,
         quantite: quantitePO66,
         category: "structure",
         type: "porte",
       });
-      console.log(`🔧 PO66: ${quantitePO66} profil(s) de ${longueurPorte}mm`);
+      console.log(
+        `🔧 ${profileRef}: ${quantitePO66} profil(s) de ${longueurPorte}mm`
+      );
     }
 
     // Vérification totaux
