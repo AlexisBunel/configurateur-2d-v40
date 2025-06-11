@@ -155,97 +155,52 @@ export class References {
    * Quincaillerie et accessoires
    */
   static accessories = {
-    // Charnières
-    CHARN_VIS: {
-      ref: "CHARN_VIS",
-      description: "Charnière visible",
-      price: 25.0,
+    EQUER100: {
+      ref: "EQUER100",
+      description: "Équerres 100X100",
+      price: 0,
       unit: "pcs",
       category: "quincaillerie",
-      type: "charniere",
+      type: "equerre",
     },
-
-    CHARN_INV: {
-      ref: "CHARN_INV",
-      description: "Charnière invisible",
-      price: 35.0,
+    CLIPV30: {
+      ref: "CLIPV30",
+      description: "Clips",
+      price: 0,
       unit: "pcs",
       category: "quincaillerie",
-      type: "charniere",
+      type: "clips",
     },
-
-    // Serrures
-    SERROULM: {
-      ref: "SERROULM",
-      description: "Serrure rouleau seul",
-      price: 45.0,
+    CALE4: {
+      ref: "CALE4",
+      description: "Cale 4mm",
+      price: 0,
       unit: "pcs",
       category: "quincaillerie",
-      type: "serrure",
+      type: "cale",
     },
-
-    SERROULPENM: {
-      ref: "SERROULPENM",
-      description: "Serrure rouleau + pêne + 1/2 cylindre",
-      price: 78.0,
-      unit: "pcs",
-      category: "quincaillerie",
-      type: "serrure",
-    },
-
-    SERPEN35M: {
-      ref: "SERPEN35M",
-      description: "Serrure pêne demi-tour + pêne dormant",
-      price: 89.0,
-      unit: "pcs",
-      category: "quincaillerie",
-      type: "serrure",
-    },
-
-    // Béquilles
-    BEQNOIR: {
-      ref: "BEQNOIR",
-      description: "Béquille noire",
-      price: 12.5,
-      unit: "pcs",
-      category: "quincaillerie",
-      type: "bequille",
-    },
-
-    BEQINOX: {
-      ref: "BEQINOX",
-      description: "Béquille inox",
-      price: 18.0,
-      unit: "pcs",
-      category: "quincaillerie",
-      type: "bequille",
-    },
-
-    // Joints
-    JOINOIR: {
-      ref: "JOINOIR",
-      description: "Joint vitrage noir",
-      price: 2.8,
+    JTPE48: {
+      ref: "JTPE-48",
+      description: "Joint plat",
+      price: 0,
       unit: "ml",
-      category: "etancheite",
+      category: "quincaillerie",
       type: "joint",
     },
-
-    JOINTRANSP: {
-      ref: "JOINTRANSP",
-      description: "Joint vitrage transparent",
-      price: 2.8,
+    JRLP47: {
+      ref: "JRLP-47",
+      description: "Joint bulle",
+      price: 0,
       unit: "ml",
-      category: "etancheite",
+      category: "quincaillerie",
       type: "joint",
     },
-
-    JOIBLANC: {
-      ref: "JOIBLANC",
-      description: "Joint vitrage blanc",
-      price: 2.8,
+    JRLP47: {
+      ref: "JRLP-47",
+      description: "Joint bulle",
+      price: 0,
       unit: "ml",
-      category: "etancheite",
+      category: "quincaillerie",
       type: "joint",
     },
   };
