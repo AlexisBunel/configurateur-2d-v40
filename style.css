@@ -80,7 +80,8 @@ form h3 {
   color: #495057;
   font-size: 1.2rem;
   font-weight: 600;
-  border-bottom: 2px solid #007bff;
+  /* border-bottom: 2px solid #007bff; */
+  border-bottom: 2px solid #f2cc84;
   padding-bottom: 8px;
 }
 
@@ -205,7 +206,8 @@ button {
 
 button[type="submit"],
 button:not(.cancel-btn):not(.secondary) {
-  background-color: #007bff;
+  /* background-color: #007bff; */
+  background-color: #f2cc84;
   color: white;
   margin-bottom: 10px;
 }
@@ -357,7 +359,8 @@ button:disabled {
 }
 
 #recapitulatif caption {
-  background: linear-gradient(135deg, #007bff, #0056b3);
+  /* background: linear-gradient(135deg, #007bff, #0056b3); */
+  background-color: #f2cb84a4;
   color: white;
   padding: 10px 20px;
   font-weight: 700;

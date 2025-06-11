@@ -100,7 +100,7 @@ export class TableRenderer {
 
     if (!accessories || accessories.length === 0) {
       tbody.innerHTML =
-        '<tr><td colspan="6" class="empty-state">Aucun accessoire</td></tr>';
+        '<tr><td colspan="7" class="empty-state">Aucun accessoire</td></tr>';
       return;
     }
 
@@ -111,6 +111,7 @@ export class TableRenderer {
         <td class="ref-cell">${accessory.ref || "N/A"}</td>
         <td class="description-cell">${accessory.description || "N/A"}</td>
         <td class="quantity-cell">${accessory.quantity || 0}</td>
+        <td class="length-cell">${accessory.length || "-"}</td>
         <td class="finish-cell">${accessory.finition || "Standard"}</td>
         <td class="unit-price-cell">${this.formatPrice(
           accessory.unitPrice || 0
@@ -210,7 +211,7 @@ export class TableRenderer {
       subtotalRow.style.fontWeight = "bold";
 
       // Adapter le nombre de colonnes selon le tableau
-      const colCount = tableLabel === "Accessoires" ? 6 : 7;
+      const colCount = tableLabel === "Accessoires" ? 7 : 7;
 
       subtotalRow.innerHTML = `
         <td colspan="${

@@ -6,6 +6,7 @@ import { PorteCalculator } from "./PorteCalculator.js";
 import { PC40Calculator } from "./PC40Calculator.js";
 import { PT40Calculator } from "./PT40Calculator.js";
 import { PorteProfilesCalculator } from "./PorteProfilesCalculator.js";
+import { AccessoriesCalculator } from "./AccessoriesCalculator.js";
 
 export class DebitsCalculator {
   /**
@@ -190,9 +191,38 @@ export class DebitsCalculator {
    * Calcule les accessoires (temporairement vide)
    */
   static calculateAccessories(config) {
-    // Pour l'instant, retourner un tableau vide
-    // À implémenter plus tard selon les besoins
-    return [];
+    console.log("🔧 Calcul des accessoires");
+
+    try {
+      const accessoriesReport = AccessoriesCalculator.generateReport(config);
+
+      console.log("📊 Rapport Accessoires:", accessoriesReport);
+
+      // Convertir pour le format attendu par les tableaux
+      const accessories = accessoriesReport.tableLines.map((line) => ({
+        ref: line.ref,
+        description: line.description,
+        quantity: line.quantity,
+        length: line.length,
+        finition: "-",
+        unitPrice: line.unitPrice,
+        totalPrice: line.totalPrice,
+        category: line.category,
+      }));
+
+      // Afficher les avertissements s'il y en a
+      if (accessoriesReport.validation.warnings.length > 0) {
+        console.warn(
+          "⚠️ Avertissements Accessoires:",
+          accessoriesReport.validation.warnings
+        );
+      }
+
+      return accessories;
+    } catch (error) {
+      console.error("❌ Erreur calcul Accessoires:", error);
+      return [];
+    }
   }
 
   /**

@@ -82,7 +82,7 @@ export class References {
       description: "Profil ouvrant charnière invisible",
       price: 0,
       unit: "mm",
-      category: "structure",
+      category: "structure_porte",
       type: "porte",
     },
     PO40: {
@@ -90,7 +90,7 @@ export class References {
       description: "Profil ouvrant 40",
       price: 0,
       unit: "mm",
-      category: "structure",
+      category: "structure_porte",
       type: "porte",
     },
     PO66: {
@@ -98,7 +98,7 @@ export class References {
       description: "Profil ouvrant 66",
       price: 0,
       unit: "mm",
-      category: "structure",
+      category: "structure_porte",
       type: "porte",
     },
     PO6622U: {
@@ -106,7 +106,7 @@ export class References {
       description: "Profil ouvrant 66 usiné",
       price: 0,
       unit: "mm",
-      category: "structure",
+      category: "structure_porte",
       type: "porte",
     },
     THB40: {
@@ -182,14 +182,6 @@ export class References {
     JTPE48: {
       ref: "JTPE-48",
       description: "Joint plat",
-      price: 0,
-      unit: "ml",
-      category: "quincaillerie",
-      type: "joint",
-    },
-    JRLP47: {
-      ref: "JRLP-47",
-      description: "Joint bulle",
       price: 0,
       unit: "ml",
       category: "quincaillerie",
