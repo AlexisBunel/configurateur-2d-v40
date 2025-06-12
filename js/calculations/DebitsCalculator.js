@@ -7,6 +7,7 @@ import { PC40Calculator } from "./PC40Calculator.js";
 import { PT40Calculator } from "./PT40Calculator.js";
 import { PorteProfilesCalculator } from "./PorteProfilesCalculator.js";
 import { AccessoriesCalculator } from "./AccessoriesCalculator.js";
+import { GlassCalculator } from "./GlassCalculator.js";
 
 export class DebitsCalculator {
   /**
@@ -231,9 +232,38 @@ export class DebitsCalculator {
    * Calcule le remplissage vitrage (temporairement vide)
    */
   static calculateGlass(config) {
-    // Pour l'instant, retourner un tableau vide
-    // À implémenter plus tard selon les besoins
-    return [];
+    console.log("🔧 Calcul du remplissage vitrage");
+
+    try {
+      const glassReport = GlassCalculator.generateReport(config);
+
+      console.log("📊 Rapport Remplissage:", glassReport);
+
+      // Convertir pour le format attendu par les tableaux (sans ref, avec quantity)
+      const glass = glassReport.tableLines.map((line) => ({
+        description: line.description,
+        epaisseur: line.epaisseur,
+        dimensions: line.dimensions,
+        surface: line.surface,
+        quantity: line.quantity, // Nouvelle colonne quantité
+        unitPrice: line.unitPrice,
+        totalPrice: line.totalPrice,
+        category: line.category,
+      }));
+
+      // Afficher les avertissements s'il y en a
+      if (glassReport.validation.warnings.length > 0) {
+        console.warn(
+          "⚠️ Avertissements Remplissage:",
+          glassReport.validation.warnings
+        );
+      }
+
+      return glass;
+    } catch (error) {
+      console.error("❌ Erreur calcul Remplissage:", error);
+      return [];
+    }
   }
 
   /**

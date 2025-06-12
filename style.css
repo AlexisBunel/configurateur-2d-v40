@@ -215,7 +215,7 @@ button:not(.cancel-btn):not(.secondary) {
 
 button[type="submit"]:hover,
 button:not(.cancel-btn):not(.secondary):hover {
-  background-color: #0056b3;
+  background-color: #e9c582;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
 }
@@ -283,14 +283,14 @@ button:disabled {
 /* ===== Formulaires de traverses ===== */
 .traverse-form {
   background-color: #f8f9fa;
-  border: 2px solid #007bff;
+  border: 2px solid #f2cc84;
   margin: 15px 0;
   position: relative;
 }
 
 .traverse-form h4 {
   margin: 0 0 15px 0;
-  color: #007bff;
+  color: #f2cc84;
   font-size: 1rem;
 }
 

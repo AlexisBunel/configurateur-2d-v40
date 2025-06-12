@@ -148,11 +148,11 @@ export class TableRenderer {
       .map(
         (g) => `
       <tr>
-        <td class="ref-cell">${g.ref || "N/A"}</td>
         <td class="description-cell">${g.description || "N/A"}</td>
         <td class="thickness-cell">${g.epaisseur || "N/A"}</td>
         <td class="dimensions-cell">${g.dimensions || "N/A"}</td>
         <td class="surface-cell">${this.formatSurface(g.surface || 0)}</td>
+        <td class="quantity-cell">${g.quantity || 0}</td>
         <td class="unit-price-cell">${this.formatPrice(
           g.unitPrice || 0
         )}/m²</td>
