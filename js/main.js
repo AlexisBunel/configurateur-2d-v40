@@ -3,6 +3,7 @@ import { ConfigModel } from "./core/ConfigModel.js";
 import { UIManager } from "./ui/UIManager.js";
 import { TableRenderer } from "./export/TableRenderer.js";
 import { PDFExporter } from "./export/PDFExporter.js";
+import { SVGRenderer } from "./rendering/SVGRenderer.js";
 
 /**
  * Application principale - Point d'entrée
@@ -38,6 +39,9 @@ class VerrierApp {
 
       this.pdfExporter = new PDFExporter(this.eventBus);
       console.log("✅ PDFExporter initialisé");
+
+      this.svgRenderer = new SVGRenderer(this.eventBus);
+      console.log("✅ SVGRenderer initialisé");
 
       this.setupGlobalEvents();
 
