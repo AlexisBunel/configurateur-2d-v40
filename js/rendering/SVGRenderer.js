@@ -134,6 +134,7 @@ export class SVGRenderer {
             profileColor
           );
         } else if (config.porte?.withDormant) {
+          const dormantThickness = 51 * this.scale;
           this.drawRect(
             currentX,
             topY,
@@ -362,7 +363,6 @@ export class SVGRenderer {
   drawPorte(config, profileColor) {
     const scale = this.scale;
     const height = config.height * scale;
-    const y = this.origin.y - height;
 
     // Sécurisation
     if (typeof this.porteDormantGaucheX !== "number") {
@@ -422,17 +422,44 @@ export class SVGRenderer {
     const porteWidthPx = porteRatio * spaceForWidths;
     const tierceWidthPx = tierceRatio * spaceForWidths;
 
-    // On dessine les profils
+    // --- Calcul de la hauteur des profils ---
+    let profileHeight;
+
+    if (
+      config.porte?.withImposte === true ||
+      config.porte?.withImposte === "true"
+    ) {
+      // Il faut être 4 px en dessous du dormant imposte
+      const yDormant =
+        this.origin.y - (config.porte?.porteHeight + 66) * this.scale;
+      const dormantThicknessImposte = 51 * this.scale;
+      const bottomOfDormant = yDormant + dormantThicknessImposte;
+      profileHeight = this.origin.y - bottomOfDormant - 4 * this.scale;
+    } else if (
+      config.porte?.withDormant === true ||
+      config.porte?.withDormant === "true"
+    ) {
+      // On enlève 51 mm + 4 px
+      profileHeight = height - (51 + 4) * this.scale;
+    } else {
+      // Cas par défaut : pleine hauteur
+      profileHeight = height;
+    }
+
+    // --- On dessine les profils ---
     let currentX = dormantGaucheX + dormantThickness + 4 * scale;
 
     for (const key of keys) {
       const thickness = profiles[key] * scale;
 
-      // On dessine le profil vertical
-      this.drawRect(currentX, y, thickness, height, profileColor);
-      currentX += thickness + 4 * scale; // Espacement après le profil
+      // Dessin du profil vertical "posé au sol"
+      const yProfile = this.origin.y - profileHeight;
+      this.drawRect(currentX, yProfile, thickness, profileHeight, profileColor);
 
-      // Si c'est un "profil gauche", on ajoute la largeur nette correspondante
+      // Avancer après le profil + espacement
+      currentX += thickness + 4 * scale;
+
+      // Si c'est un "profil gauche", on avance aussi de la largeur nette correspondante
       if (key === "tierceGauche") {
         currentX += tierceWidthPx;
       }
