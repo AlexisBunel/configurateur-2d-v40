@@ -364,6 +364,9 @@ export class SVGRenderer {
     const scale = this.scale;
     const height = config.height * scale;
 
+    // Valeur d'espacement configurable
+    const spacing = 8 * scale;
+
     // Sécurisation
     if (typeof this.porteDormantGaucheX !== "number") {
       console.warn(
@@ -397,11 +400,11 @@ export class SVGRenderer {
 
     const availableSpace = dormantDroitX - (dormantGaucheX + dormantThickness);
 
-    // Nombre d'espacements de 4px :
-    let spacingsCount = 2; // 4px entre dormant gauche et 1er profil, et entre dernier profil et dormant droit
-    spacingsCount += keys.length - 1; // 4px entre chaque profil
+    // Nombre d'espacements :
+    let spacingsCount = 2; // entre dormant gauche et 1er profil + dernier profil et dormant droit
+    spacingsCount += keys.length - 1; // entre chaque profil
 
-    const totalSpacing = spacingsCount * 4 * scale;
+    const totalSpacing = spacingsCount * spacing;
 
     // Total épaisseurs de profils
     let totalProfilesThickness = 0;
@@ -429,25 +432,25 @@ export class SVGRenderer {
       config.porte?.withImposte === true ||
       config.porte?.withImposte === "true"
     ) {
-      // Il faut être 4 px en dessous du dormant imposte
+      // Il faut être "spacing" en dessous du dormant imposte
       const yDormant =
         this.origin.y - (config.porte?.porteHeight + 66) * this.scale;
       const dormantThicknessImposte = 51 * this.scale;
       const bottomOfDormant = yDormant + dormantThicknessImposte;
-      profileHeight = this.origin.y - bottomOfDormant - 4 * this.scale;
+      profileHeight = this.origin.y - bottomOfDormant - spacing;
     } else if (
       config.porte?.withDormant === true ||
       config.porte?.withDormant === "true"
     ) {
-      // On enlève 51 mm + 4 px
-      profileHeight = height - (51 + 4) * this.scale;
+      // On enlève 51 mm + spacing
+      profileHeight = height - (51 * scale + spacing);
     } else {
       // Cas par défaut : pleine hauteur
       profileHeight = height;
     }
 
     // --- On dessine les profils ---
-    let currentX = dormantGaucheX + dormantThickness + 4 * scale;
+    let currentX = dormantGaucheX + dormantThickness + spacing;
 
     let tierceStartX = null;
     let porteStartX = null;
@@ -459,16 +462,16 @@ export class SVGRenderer {
       const yProfile = this.origin.y - profileHeight;
       this.drawRect(currentX, yProfile, thickness, profileHeight, profileColor);
 
-      // Avancer après le profil + espacement
-      currentX += thickness + 4 * scale;
+      // Avancer après le profil + spacing
+      currentX += thickness + spacing;
 
       // Si c'est un "profil gauche", on mémorise la position de départ
       if (key === "tierceGauche") {
-        tierceStartX = currentX;
+        tierceStartX = currentX - spacing;
         currentX += tierceWidthPx;
       }
       if (key === "porteGauche") {
-        porteStartX = currentX;
+        porteStartX = currentX - spacing;
         currentX += porteWidthPx;
       }
     }
@@ -482,7 +485,7 @@ export class SVGRenderer {
       this.drawRect(
         tierceStartX,
         this.origin.y - profileHeight,
-        tierceWidthPx,
+        tierceWidthPx + spacing,
         traverseThickness,
         profileColor
       );
@@ -491,7 +494,7 @@ export class SVGRenderer {
       this.drawRect(
         tierceStartX,
         this.origin.y - traverseThickness,
-        tierceWidthPx,
+        tierceWidthPx + spacing,
         traverseThickness,
         profileColor
       );
@@ -503,7 +506,7 @@ export class SVGRenderer {
       this.drawRect(
         porteStartX,
         this.origin.y - profileHeight,
-        porteWidthPx,
+        porteWidthPx + spacing,
         traverseThickness,
         profileColor
       );
@@ -512,7 +515,7 @@ export class SVGRenderer {
       this.drawRect(
         porteStartX,
         this.origin.y - traverseThickness,
-        porteWidthPx,
+        porteWidthPx + spacing,
         traverseThickness,
         profileColor
       );
