@@ -25,13 +25,17 @@ export class SVGRenderer {
       );
 
       // Modifier le fond du SVG si profil blanc
-      if (profileColor === "#ddd") {
-        this.svg.style.backgroundColor = "#e9ecef";
+      if (profileColor === "#ffffff") {
+        this.svg.style.backgroundColor = "#ddd";
       } else {
         this.svg.style.backgroundColor = "white"; // ou ce que tu veux en fond normal
       }
 
       this.drawModules(config, profileColor);
+
+      if (config.type === "porte") {
+        this.drawPorte(config, profileColor);
+      }
     } catch (error) {
       console.error("\u274C Erreur rendu SVG:", error);
     }
@@ -66,7 +70,7 @@ export class SVGRenderer {
       case "gris":
         return "#999";
       case "blanc":
-        return "#ddd";
+        return "#ffffff";
       default:
         return "#222";
     }
@@ -90,6 +94,11 @@ export class SVGRenderer {
 
         if (isPorteModule) {
           const dormantThickness = 51 * this.scale;
+          this.porteDormantGaucheX = currentX;
+          console.log(
+            "✅ Mémorisation porteDormantGaucheX =",
+            this.porteDormantGaucheX
+          );
           this.drawRect(x, y, dormantThickness, height, profileColor);
           currentX += dormantThickness;
         } else {
@@ -125,7 +134,6 @@ export class SVGRenderer {
             profileColor
           );
         } else if (config.porte?.withDormant) {
-          const dormantThickness = 51 * this.scale;
           this.drawRect(
             currentX,
             topY,
@@ -185,6 +193,12 @@ export class SVGRenderer {
         if (isPorteModule) {
           // Si le module courant est la porte → dormant 51mm à droite
           const dormantThickness = 51 * this.scale;
+          const dormantDroitX = currentX + moduleWidth;
+          this.porteDormantDroitX = dormantDroitX;
+          console.log(
+            "✅ Mémorisation porteDormantDroitX =",
+            this.porteDormantDroitX
+          );
           this.drawRect(
             currentX + moduleWidth,
             y,
@@ -195,6 +209,12 @@ export class SVGRenderer {
         } else {
           if (nextIsPorteModule) {
             const dormantThickness = 51 * this.scale;
+            const dormantDroitX = currentX + moduleWidth;
+            this.porteDormantDroitX = dormantDroitX;
+            console.log(
+              "✅ Mémorisation porteDormantDroitX =",
+              this.porteDormantDroitX
+            );
             this.drawRect(
               currentX + moduleWidth,
               y,
@@ -227,6 +247,12 @@ export class SVGRenderer {
 
     if (isLastPorteModule) {
       const dormantThickness = 51 * this.scale;
+      const dormantDroitX = currentX;
+      this.porteDormantDroitX = dormantDroitX;
+      console.log(
+        "✅ Mémorisation porteDormantDroitX =",
+        this.porteDormantDroitX
+      );
       this.drawRect(currentX, y, dormantThickness, height, profileColor);
     } else {
       const pt40Thickness = 40 * this.scale;
@@ -240,6 +266,180 @@ export class SVGRenderer {
 
   getDormantHeight(config) {
     return config.height * this.scale;
+  }
+
+  getPorteProfiles(config) {
+    const serrure = config.porte?.serrure;
+    const charniereType = config.porte?.charniereType;
+    const sensOuverture = config.porte?.sensOuverture;
+    const withTierce = config.porte?.withTierce;
+
+    // Profils porte
+    let porteGauche = 40;
+    let porteDroite = 40;
+
+    // Profils tierce
+    let tierceGauche = 40;
+    let tierceDroite = 40;
+
+    if (sensOuverture === "droit") {
+      if (charniereType === "visible") {
+        tierceGauche = 40;
+        tierceDroite = 40;
+        if (serrure === "SERPEN35M") {
+          porteGauche = 66;
+          porteDroite = 40;
+        } else {
+          porteGauche = 40;
+          porteDroite = 40;
+        }
+      } else {
+        // invisible
+        tierceGauche = 53;
+        tierceDroite = 40;
+        if (serrure === "SERPEN35M") {
+          porteGauche = 66;
+          porteDroite = 53;
+        } else {
+          porteGauche = 40;
+          porteDroite = 53;
+        }
+      }
+
+      if (withTierce === true || withTierce === "true") {
+        return {
+          tierceGauche,
+          tierceDroite,
+          porteGauche,
+          porteDroite,
+        };
+      } else {
+        return {
+          porteGauche,
+          porteDroite,
+        };
+      }
+    } else {
+      tierceGauche = 40;
+      tierceDroite = 40;
+      if (charniereType === "visible") {
+        if (serrure === "SERPEN35M") {
+          porteGauche = 40;
+          porteDroite = 66;
+        } else {
+          porteGauche = 40;
+          porteDroite = 40;
+        }
+      } else {
+        // invisible
+        tierceGauche = 40;
+        tierceDroite = 53;
+        if (serrure === "SERPEN35M") {
+          porteGauche = 53;
+          porteDroite = 66;
+        } else {
+          porteGauche = 53;
+          porteDroite = 40;
+        }
+      }
+
+      if (withTierce === true || withTierce === "true") {
+        return {
+          porteGauche,
+          porteDroite,
+          tierceGauche,
+          tierceDroite,
+        };
+      } else {
+        return {
+          porteGauche,
+          porteDroite,
+        };
+      }
+    }
+  }
+
+  drawPorte(config, profileColor) {
+    const scale = this.scale;
+    const height = config.height * scale;
+    const y = this.origin.y - height;
+
+    // Sécurisation
+    if (typeof this.porteDormantGaucheX !== "number") {
+      console.warn(
+        "⚠️ porteDormantGaucheX non défini → on ne dessine pas la porte"
+      );
+      return;
+    }
+
+    if (typeof this.porteDormantDroitX !== "number") {
+      console.warn(
+        "⚠️ porteDormantDroitX non défini → on ne dessine pas la porte"
+      );
+      return;
+    }
+
+    // Récupérer les profils
+    const profiles = this.getPorteProfiles(config);
+    const keys = Object.keys(profiles);
+
+    // Largeurs nettes de la porte et de la tierce (en mm)
+    const porteWidthMM = Number(config.porte?.porteWidth || 0);
+    const tierceWidthMM =
+      config.porte?.withTierce === true || config.porte?.withTierce === "true"
+        ? Number(config.porte?.tierceWidth || 0)
+        : 0;
+
+    // Espace disponible entre les 2 PTPV51/PTCI51
+    const dormantGaucheX = this.porteDormantGaucheX;
+    const dormantDroitX = this.porteDormantDroitX;
+    const dormantThickness = 51 * scale;
+
+    const availableSpace = dormantDroitX - (dormantGaucheX + dormantThickness);
+
+    // Nombre d'espacements de 4px :
+    let spacingsCount = 2; // 4px entre dormant gauche et 1er profil, et entre dernier profil et dormant droit
+    spacingsCount += keys.length - 1; // 4px entre chaque profil
+
+    const totalSpacing = spacingsCount * 4 * scale;
+
+    // Total épaisseurs de profils
+    let totalProfilesThickness = 0;
+    for (const key of keys) {
+      totalProfilesThickness += profiles[key] * scale;
+    }
+
+    // Espace restant pour les largeurs nettes (porte et tierce)
+    const spaceForWidths =
+      availableSpace - totalSpacing - totalProfilesThickness;
+
+    // Calcul des ratios
+    const sumWidthsMM = porteWidthMM + tierceWidthMM;
+    const porteRatio = porteWidthMM / sumWidthsMM;
+    const tierceRatio = tierceWidthMM / sumWidthsMM;
+
+    // Largeurs réelles en px
+    const porteWidthPx = porteRatio * spaceForWidths;
+    const tierceWidthPx = tierceRatio * spaceForWidths;
+
+    // On dessine les profils
+    let currentX = dormantGaucheX + dormantThickness + 4 * scale;
+
+    for (const key of keys) {
+      const thickness = profiles[key] * scale;
+
+      // On dessine le profil vertical
+      this.drawRect(currentX, y, thickness, height, profileColor);
+      currentX += thickness + 4 * scale; // Espacement après le profil
+
+      // Si c'est un "profil gauche", on ajoute la largeur nette correspondante
+      if (key === "tierceGauche") {
+        currentX += tierceWidthPx;
+      }
+      if (key === "porteGauche") {
+        currentX += porteWidthPx;
+      }
+    }
   }
 
   drawRect(x, y, width, height, color) {
