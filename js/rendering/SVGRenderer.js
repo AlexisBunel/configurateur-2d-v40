@@ -449,6 +449,9 @@ export class SVGRenderer {
     // --- On dessine les profils ---
     let currentX = dormantGaucheX + dormantThickness + 4 * scale;
 
+    let tierceStartX = null;
+    let porteStartX = null;
+
     for (const key of keys) {
       const thickness = profiles[key] * scale;
 
@@ -459,14 +462,91 @@ export class SVGRenderer {
       // Avancer après le profil + espacement
       currentX += thickness + 4 * scale;
 
-      // Si c'est un "profil gauche", on avance aussi de la largeur nette correspondante
+      // Si c'est un "profil gauche", on mémorise la position de départ
       if (key === "tierceGauche") {
+        tierceStartX = currentX;
         currentX += tierceWidthPx;
       }
       if (key === "porteGauche") {
+        porteStartX = currentX;
         currentX += porteWidthPx;
       }
     }
+
+    // --- Traverses hautes et basses ---
+    const traverseThickness = 40 * scale;
+
+    // Traverses tierce
+    if (tierceStartX !== null) {
+      // Traverse haute tierce
+      this.drawRect(
+        tierceStartX,
+        this.origin.y - profileHeight,
+        tierceWidthPx,
+        traverseThickness,
+        profileColor
+      );
+
+      // Traverse basse tierce
+      this.drawRect(
+        tierceStartX,
+        this.origin.y - traverseThickness,
+        tierceWidthPx,
+        traverseThickness,
+        profileColor
+      );
+    }
+
+    // Traverses porte
+    if (porteStartX !== null) {
+      // Traverse haute porte
+      this.drawRect(
+        porteStartX,
+        this.origin.y - profileHeight,
+        porteWidthPx,
+        traverseThickness,
+        profileColor
+      );
+
+      // Traverse basse porte
+      this.drawRect(
+        porteStartX,
+        this.origin.y - traverseThickness,
+        porteWidthPx,
+        traverseThickness,
+        profileColor
+      );
+    }
+
+    // --- Traverses intermédiaires (porte et tierce) ---
+    const traversesPorte = config.traversesPorte || [];
+
+    traversesPorte.forEach((traverse) => {
+      const traverseY = this.origin.y - traverse.height * scale - 20 * scale;
+      const traverseThickness = Number(traverse.type) * scale; // 28 mm ou 37 mm
+
+      // Traverse sur la tierce
+      if (traverse.onTierce && tierceStartX !== null) {
+        this.drawRect(
+          tierceStartX,
+          traverseY,
+          tierceWidthPx,
+          traverseThickness,
+          profileColor
+        );
+      }
+
+      // Traverse sur la porte
+      if (traverse.onPorte && porteStartX !== null) {
+        this.drawRect(
+          porteStartX,
+          traverseY,
+          porteWidthPx,
+          traverseThickness,
+          profileColor
+        );
+      }
+    });
   }
 
   drawRect(x, y, width, height, color) {
