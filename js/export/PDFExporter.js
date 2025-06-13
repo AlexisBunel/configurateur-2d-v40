@@ -3,6 +3,7 @@ export class PDFExporter {
   constructor(eventBus) {
     this.eventBus = eventBus;
     this.jsPDF = null;
+    this.logoBase64 = null;
     this.init();
   }
 
@@ -74,6 +75,29 @@ export class PDFExporter {
     });
   }
 
+  async loadLogo() {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = "/img/logo.png";
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        this.logoBase64 = canvas.toDataURL("image/png");
+        resolve();
+      };
+
+      img.onerror = () => {
+        console.warn("⚠️ Impossible de charger le logo : img/logo.png");
+        this.logoBase64 = null;
+        resolve();
+      };
+    });
+  }
+
   /**
    * Attache le listener au bouton d'export
    */
@@ -104,6 +128,7 @@ export class PDFExporter {
       if (!this.jsPDF) {
         console.log("📥 Rechargement de jsPDF...");
         await this.loadJsPDF();
+        await this.loadLogo();
       }
 
       if (!this.jsPDF) {
@@ -154,6 +179,52 @@ export class PDFExporter {
       const errorMsg = `Erreur lors de la génération du PDF:\n${error.message}\n\nVérifiez la console pour plus de détails.`;
       alert(errorMsg);
     }
+  }
+
+  generatePDFContent(
+    doc,
+    config,
+    profilesData /* , accessoriesData, glassData */
+  ) {
+    let yPosition = 15;
+
+    // ----- HEADER -----
+    // Logo
+    if (this.logoBase64) {
+      doc.addImage(this.logoBase64, "PNG", 15, yPosition - 5, 30, 30);
+    }
+
+    // Titre centré
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("Verrière V40", 105, yPosition + 5, { align: "center" });
+
+    // Date + heure à droite
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("fr-FR");
+    const timeStr = now.toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const dateTimeStr = `Le ${dateStr} à ${timeStr}`;
+
+    doc.setFontSize(10);
+    doc.text(dateTimeStr, 200 - 15, yPosition + 13, { align: "right" });
+
+    // Ligne de séparation
+    doc.setLineWidth(0.5);
+    doc.line(15, yPosition + 15, 200 - 15, yPosition + 15);
+
+    // Position de départ pour le reste du contenu
+    yPosition += 30;
+
+    // === Ici tu enchaînes avec ton contenu habituel ===
+    // Exemple :
+    doc.setFontSize(14);
+    doc.text("Récapitulatif de la configuration", 20, yPosition);
+    yPosition += 10;
+
+    // ... le reste de ton code existant continue ici ...
   }
 
   /**
@@ -243,166 +314,6 @@ export class PDFExporter {
       console.error("❌ Erreur récupération profiles:", error);
       return { profiles: [], total: "0,00 €" };
     }
-  }
-
-  /**
-   * Génère le contenu du PDF
-   */
-  generatePDFContent(doc, config, profilesData) {
-    let yPosition = 20;
-
-    // ===== EN-TÊTE =====
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.text("Configurateur Verrière V40", 105, yPosition, { align: "center" });
-
-    yPosition += 20;
-
-    // ===== RÉCAPITULATIF CONFIGURATION =====
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Récapitulatif de la configuration", 20, yPosition);
-
-    yPosition += 10;
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-
-    const configLines = [
-      `Dimensions : ${config.dimensions}`,
-      `Type : ${config.type}`,
-      `Nombre de modules : ${config.modules}`,
-      `Finition : ${config.finition}`,
-    ];
-
-    // Ajouter infos porte si applicable
-    if (config.porte) {
-      configLines.push(
-        `Porte - Largeur : ${config.porte.largeur}`,
-        `Porte - Hauteur : ${config.porte.hauteur}`,
-        `Avec tierce : ${config.porte.tierce}`,
-        `Avec imposte : ${config.porte.imposte}`
-      );
-    }
-
-    configLines.forEach((line) => {
-      doc.text(line, 25, yPosition);
-      yPosition += 6;
-    });
-
-    yPosition += 10;
-
-    // ===== TABLEAU DES PROFILÉS =====
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Débits des profilés", 20, yPosition);
-
-    yPosition += 10;
-
-    // Vérifier qu'on a des données
-    if (profilesData.profiles.length === 0) {
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "italic");
-      doc.text("Aucun profilé calculé", 25, yPosition);
-      return;
-    }
-
-    // En-têtes du tableau
-    const headers = ["Réf.", "Désignation", "Finition", "Long.", "Qté"];
-    // Tu peux ajuster les largeurs au besoin :
-    const colWidths = [20, 50, 35, 25, 15];
-    const colX = [20, 40, 90, 150, 180];
-
-    // Style en-têtes
-    doc.setFillColor(73, 80, 87); // Gris foncé
-    doc.setTextColor(255, 255, 255); // Blanc
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-
-    // Dessiner l'en-tête
-    doc.rect(20, yPosition, 175, 8, "F");
-    headers.forEach((header, i) => {
-      doc.text(header, colX[i] + 2, yPosition + 6);
-    });
-
-    yPosition += 8;
-
-    // Style données
-    doc.setTextColor(0, 0, 0); // Noir
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-
-    let isEvenRow = true;
-
-    profilesData.profiles.forEach((profile, index) => {
-      // Vérifier si on a assez de place (garde 30mm pour le total)
-      if (yPosition > 250) {
-        doc.addPage();
-        yPosition = 20;
-
-        // Redessiner l'en-tête sur la nouvelle page
-        doc.setFillColor(73, 80, 87);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.rect(20, yPosition, 175, 8, "F");
-        headers.forEach((header, i) => {
-          doc.text(header, colX[i] + 2, yPosition + 6);
-        });
-        yPosition += 8;
-
-        doc.setTextColor(0, 0, 0);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        isEvenRow = true;
-      }
-
-      // Alternance couleur lignes
-      if (isEvenRow) {
-        doc.setFillColor(248, 249, 250); // Gris très clair
-        doc.rect(20, yPosition, 175, 7, "F");
-      }
-
-      // Données
-      const rowData = [
-        profile.ref,
-        this.truncateText(profile.description, 35),
-        this.truncateText(profile.finition, 30),
-        profile.longueur,
-        profile.quantite,
-      ];
-
-      rowData.forEach((data, i) => {
-        doc.text(data, colX[i] + 2, yPosition + 5);
-      });
-
-      // Bordure de ligne
-      doc.setDrawColor(233, 236, 239);
-      doc.line(20, yPosition + 7, 195, yPosition + 7);
-
-      yPosition += 7;
-      isEvenRow = !isEvenRow;
-    });
-  }
-
-  /**
-   * Tronque un texte pour l'adapter aux colonnes
-   */
-  truncateText(text, maxLength) {
-    if (!text) return "";
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength - 3) + "...";
-  }
-
-  /**
-   * Convertit le code couleur en label
-   */
-  getFinitionLabel(colorProfile) {
-    const colorMap = {
-      noir: "Laqué noir RAL 9005 granité",
-      gris: "Laqué gris RAL 7016 granité",
-      blanc: "Laqué blanc RAL 9003 granité",
-    };
-    return colorMap[colorProfile] || "RAL 9005 granité";
   }
 
   /**
