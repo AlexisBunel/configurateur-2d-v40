@@ -16,8 +16,6 @@
     </header>
     <ul>
       <h3>Corrections à apporter :</h3>
-      <li>Verriere hauteur remplissage sous traverse (bas) manque 9.5mm</li>
-      <li>
         Si porte avec imposte et hauteur mini puis hauteur verriere mini = bug
       </li>
       <li>
@@ -36,7 +34,6 @@
           aria-label="Prévisualisation de la verrière"
         >
           <defs>
-            <!-- Gradients et patterns pour le rendu -->
             <linearGradient
               id="metalGradient"
               x1="0%"
@@ -59,7 +56,6 @@
               <rect width="4" height="4" fill="#f0f8ff" opacity="0.3" />
             </pattern>
           </defs>
-          <!-- Le contenu sera généré dynamiquement -->
         </svg>
         <div class="preview-info">
           <p><strong>Échelle automatique</strong> - Rendu temps réel</p>
@@ -226,7 +222,6 @@
             </label>
 
             <div id="dimensions-ouverture" class="calculated-field">
-              <!-- Sera rempli dynamiquement -->
             </div>
           </div>
 
@@ -339,7 +334,6 @@
                 id="modulesCount"
                 data-config-key="modulesCount"
               >
-                <!-- Options générées dynamiquement -->
               </select>
               <small>Calculé selon la largeur totale</small>
             </label>
@@ -364,7 +358,6 @@
             <div class="section-header">
               <h4>Largeur des modules (clair de vitrage)</h4>
               <div id="modules-width">
-                <!-- Généré dynamiquement -->
               </div>
               <button
                 id="reset-btn"
@@ -549,7 +542,6 @@
       </div>
     </section>
 
-    <!-- Scripts -->
     <script type="module" src="js/main.js"></script>
   </body>
 </html>

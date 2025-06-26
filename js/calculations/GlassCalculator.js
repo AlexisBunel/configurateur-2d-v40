@@ -144,15 +144,15 @@ export class GlassCalculator {
 
         if (i === 0) {
           // Premier remplissage (du bas jusqu'à la première traverse)
-          const h1 = hTi - 30.5;
+          const h1 = hTi - 21;
           hauteurs.push(h1);
-          console.log(`📏 h1 = ${hTi} - 30.5 = ${h1}mm`);
+          console.log(`📏 h1 = ${hTi} - 21 = ${h1}mm`);
         } else {
           // Remplissages intermédiaires (entre deux traverses)
           const hTprev = traverses[i - 1].height;
-          const hi = hTi - hTprev - 30.5;
+          const hi = hTi - hTprev - 21;
           hauteurs.push(hi);
-          console.log(`📏 h${i + 1} = ${hTi} - ${hTprev} - 30.5 = ${hi}mm`);
+          console.log(`📏 h${i + 1} = ${hTi} - ${hTprev} - 21 = ${hi}mm`);
         }
       }
 

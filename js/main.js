@@ -5,9 +5,6 @@ import { TableRenderer } from "./export/TableRenderer.js";
 import { PDFExporter } from "./export/PDFExporter.js";
 import { SVGRenderer } from "./rendering/SVGRenderer.js";
 
-/**
- * Application principale - Point d'entrée
- */
 class VerrierApp {
   constructor() {
     this.eventBus = new EventBus();
@@ -18,22 +15,16 @@ class VerrierApp {
     this.init();
   }
 
-  /**
-   * Initialise l'application
-   */
   async init() {
     try {
       console.log("🚀 Initialisation Configurateur Verrière V40...");
 
-      // 1. Initialisation du modèle de configuration
       this.configModel = new ConfigModel({}, this.eventBus);
       console.log("✅ ConfigModel initialisé");
 
-      // 2. Initialisation du gestionnaire UI
       this.uiManager = new UIManager(this.configModel, this.eventBus);
       console.log("✅ UIManager initialisé");
 
-      // 3. Initialisation du rendu des tableaux
       this.tableRenderer = new TableRenderer(this.eventBus);
       console.log("✅ TableRenderer initialisé");
 
@@ -47,12 +38,10 @@ class VerrierApp {
 
       this.loadSavedConfig();
 
-      // 5. Validation initiale et mise à jour
       this.configModel.validate();
       this.eventBus.emit("configChanged", this.configModel.getConfig());
 
-      console.log("🎉 Application initialisée avec succès !");
-      console.log("📊 Configuration initiale :", this.configModel.getSummary());
+      console.log("Configuration initiale :", this.configModel.getSummary());
 
       // Mode développement
       if (this.isDevelopmentMode()) {
@@ -64,31 +53,18 @@ class VerrierApp {
     }
   }
 
-  /**
-   * Configure les événements globaux de l'application
-   */
   setupGlobalEvents() {
-    // Gestion des erreurs globales
     window.addEventListener("error", (event) => {
       console.error("Erreur globale capturée :", event.error);
       this.showErrorMessage(`Erreur: ${event.error.message}`);
     });
 
-    // Gestion des erreurs de promesses non gérées
     window.addEventListener("unhandledrejection", (event) => {
       console.error("Promesse rejetée non gérée :", event.reason);
       this.showErrorMessage(`Erreur async: ${event.reason}`);
       event.preventDefault();
     });
 
-    // Sauvegarde automatique avant fermeture (optionnel)
-    // window.addEventListener("beforeunload", () => {
-    //   if (this.configModel) {
-    //     this.configModel.saveToStorage();
-    //   }
-    // });
-
-    // Raccourcis clavier
     document.addEventListener("keydown", (event) => {
       if (event.ctrlKey || event.metaKey) {
         switch (event.key) {
@@ -113,72 +89,52 @@ class VerrierApp {
       }
     });
 
-    // Événements de changement de configuration pour debugging
     this.eventBus.on("configChanged", (config) => {
       this.onConfigChanged(config);
     });
   }
 
-  /**
-   * Gestionnaire de changement de configuration
-   */
   onConfigChanged(config) {
-    // Log pour développement
     if (this.isDevelopmentMode()) {
-      console.log("🔄 Configuration mise à jour :", config);
+      console.log("Configuration mise à jour :", config);
     }
 
-    // Validation continue
     try {
       const validation = this.validateConfiguration(config);
       if (!validation.valid) {
-        console.warn("⚠️ Configuration invalide :", validation.errors);
+        console.warn("Configuration invalide :", validation.errors);
       }
     } catch (error) {
-      console.error("❌ Erreur de validation :", error);
+      console.error("Erreur de validation :", error);
     }
-
-    // Sauvegarde automatique (optionnel)
-    // if (this.autoSaveEnabled()) {
-    //   this.debounce(() => {
-    //     this.configModel.saveToStorage("autosave_config");
-    //   }, 2000)();
-    // }
   }
 
-  /**
-   * Charge une configuration sauvegardée
-   */
   loadSavedConfig() {
     console.log(
-      "📋 Utilisation de la configuration par défaut (chargement désactivé)"
+      "Utilisation de la configuration par défaut (chargement désactivé)"
     );
     try {
       localStorage.removeItem("verriere_config");
       localStorage.removeItem("autosave_config");
     } catch (error) {
-      console.warn("⚠️ Impossible de nettoyer le stockage :", error);
+      console.warn("Impossible de nettoyer le stockage :", error);
     }
 
     // try {
-    //   // Essaie de charger la dernière configuration
     //   const loaded = this.configModel.loadFromStorage();
     //   if (loaded) {
-    //     console.log("📂 Configuration chargée depuis le stockage");
+    //     console.log("Configuration chargée depuis le stockage");
     //   } else {
-    //     console.log("📋 Utilisation de la configuration par défaut");
+    //     console.log("Utilisation de la configuration par défaut");
     //   }
     // } catch (error) {
     //   console.warn(
-    //     "⚠️ Impossible de charger la configuration sauvegardée :",
+    //     "Impossible de charger la configuration sauvegardée :",
     //     error
     //   );
     // }
   }
 
-  /**
-   * Sauvegarde la configuration actuelle
-   */
   saveConfig() {
     try {
       const success = this.configModel.saveToStorage();
@@ -188,14 +144,11 @@ class VerrierApp {
         this.showErrorMessage("Erreur lors de la sauvegarde");
       }
     } catch (error) {
-      console.error("❌ Erreur de sauvegarde :", error);
+      console.error("Erreur de sauvegarde :", error);
       this.showErrorMessage("Erreur lors de la sauvegarde");
     }
   }
 
-  /**
-   * Remet à zéro la configuration
-   */
   resetConfig() {
     if (
       confirm("Êtes-vous sûr de vouloir remettre à zéro la configuration ?")
@@ -206,19 +159,15 @@ class VerrierApp {
         this.eventBus.emit("configChanged", this.configModel.getConfig());
         this.showSuccessMessage("Configuration remise à zéro");
       } catch (error) {
-        console.error("❌ Erreur lors de la remise à zéro :", error);
+        console.error("Erreur lors de la remise à zéro :", error);
         this.showErrorMessage("Erreur lors de la remise à zéro");
       }
     }
   }
 
-  /**
-   * Valide une configuration
-   */
   validateConfiguration(config) {
     const errors = [];
 
-    // Validation des dimensions
     if (!config.width || config.width < 400 || config.width > 5000) {
       errors.push("Largeur invalide");
     }
@@ -226,12 +175,10 @@ class VerrierApp {
       errors.push("Hauteur invalide");
     }
 
-    // Validation des modules
     if (!config.modulesCount || config.modulesCount < 1) {
       errors.push("Nombre de modules invalide");
     }
 
-    // Validation porte si applicable
     if (config.type === "porte") {
       if (!config.porte) {
         errors.push("Configuration porte manquante");
@@ -259,30 +206,19 @@ class VerrierApp {
     };
   }
 
-  /**
-   * Affiche un message d'erreur à l'utilisateur
-   */
   showErrorMessage(message) {
     this.showMessage(message, "error");
   }
 
-  /**
-   * Affiche un message de succès à l'utilisateur
-   */
   showSuccessMessage(message) {
     this.showMessage(message, "success");
   }
 
-  /**
-   * Affiche un message à l'utilisateur
-   */
   showMessage(message, type = "info") {
-    // Crée un toast message
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
 
-    // Style du toast
     Object.assign(toast.style, {
       position: "fixed",
       top: "20px",
@@ -298,7 +234,6 @@ class VerrierApp {
       transition: "transform 0.3s ease",
     });
 
-    // Couleur selon le type
     switch (type) {
       case "error":
         toast.style.backgroundColor = "#dc3545";
@@ -312,12 +247,10 @@ class VerrierApp {
 
     document.body.appendChild(toast);
 
-    // Animation d'entrée
     setTimeout(() => {
       toast.style.transform = "translateX(0)";
     }, 100);
 
-    // Suppression automatique
     setTimeout(() => {
       toast.style.transform = "translateX(100%)";
       setTimeout(() => {
@@ -328,9 +261,6 @@ class VerrierApp {
     }, 3000);
   }
 
-  /**
-   * Vérifie si on est en mode développement
-   */
   isDevelopmentMode() {
     return (
       window.location.hostname === "localhost" ||
@@ -339,13 +269,9 @@ class VerrierApp {
     );
   }
 
-  /**
-   * Active le mode debug
-   */
   enableDebugMode() {
-    console.log("🔧 Mode développement activé");
+    console.log("Mode développement activé");
 
-    // Expose des utilitaires globaux pour le debug
     window.VerrierApp = this;
     window.debugConfig = () => {
       console.table(this.configModel.state);
@@ -353,7 +279,7 @@ class VerrierApp {
     };
     window.exportConfig = () => {
       const json = this.configModel.toJSON();
-      console.log("📋 Configuration exportée :");
+      console.log("Configuration exportée :");
       console.log(json);
       return json;
     };
@@ -362,11 +288,11 @@ class VerrierApp {
         const success = this.configModel.fromJSON(jsonString);
         if (success) {
           this.eventBus.emit("configChanged", this.configModel.getConfig());
-          console.log("✅ Configuration importée");
+          console.log("Configuration importée");
         }
         return success;
       } catch (error) {
-        console.error("❌ Erreur d'import :", error);
+        console.error("Erreur d'import :", error);
         return false;
       }
     };
@@ -374,7 +300,6 @@ class VerrierApp {
       this.resetConfig();
     };
 
-    // Logs de performance
     this.eventBus.on("configChanged", () => {
       console.time("UI Update");
       setTimeout(() => {
@@ -382,7 +307,6 @@ class VerrierApp {
       }, 0);
     });
 
-    // Affiche un indicateur visuel du mode debug
     const debugIndicator = document.createElement("div");
     debugIndicator.innerHTML = "🔧 DEBUG";
     Object.assign(debugIndicator.style, {
@@ -400,17 +324,11 @@ class VerrierApp {
     document.body.appendChild(debugIndicator);
   }
 
-  /**
-   * Vérifie si la sauvegarde automatique est activée
-   */
   autoSaveEnabled() {
     // return localStorage.getItem("verriere_autosave") !== "false";
     return false;
   }
 
-  /**
-   * Utilitaire debounce
-   */
   debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -423,9 +341,6 @@ class VerrierApp {
     };
   }
 
-  /**
-   * Méthodes publiques pour l'API
-   */
   getConfig() {
     return this.configModel.getConfig();
   }
@@ -453,18 +368,14 @@ class VerrierApp {
   }
 }
 
-// ===== Initialisation de l'application =====
 document.addEventListener("DOMContentLoaded", () => {
   try {
-    // Démarre l'application
     const app = new VerrierApp();
 
-    // Expose l'app globalement si nécessaire
     window.verrierApp = app;
   } catch (error) {
-    console.error("❌ Erreur fatale lors du démarrage :", error);
+    console.error("Erreur lors du démarrage :", error);
 
-    // Affiche un message d'erreur à l'utilisateur
     document.body.innerHTML = `
       <div style="
         display: flex; 

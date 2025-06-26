@@ -1,4 +1,3 @@
-// ===== js/ui/UIManager.js =====
 import { ModulesCalculator } from "../calculations/ModulesCalculator.js";
 import { PorteCalculator } from "../calculations/PorteCalculator.js";
 import { TraversesCalculator } from "../calculations/TraversesCalculator.js";
@@ -10,7 +9,7 @@ export class UIManager {
     this.eventBus = eventBus;
     this.fieldValidators = new Map();
     this.lockedFields = new Set();
-    this.isUpdatingUI = false; // CORRECTION: Protection contre les boucles
+    this.isUpdatingUI = false;
     this.lastImposedModule = -1;
     this.lastConfigType = "pleine";
     this.lastPorteIndex = null;
@@ -24,36 +23,28 @@ export class UIManager {
     this.setupValidation();
     this.updateFromConfig(this.configModel.state);
 
-    // Écoute les changements de configuration
     this.eventBus.on("configChanged", (config) => {
       this.updateFromConfig(config);
     });
   }
 
-  /**
-   * Attache les listeners sur tous les formulaires
-   */
   attachFormListeners() {
-    // Listeners pour tous les champs avec data-config-key
     document.querySelectorAll("[data-config-key]").forEach((input) => {
       const key = input.getAttribute("data-config-key");
 
-      // CORRECTION: Validation seulement à la perte de focus pour les inputs numériques
       if (input.type === "number") {
         input.addEventListener("blur", () => {
           this.handleFieldChange(input, key);
           this.validateField(input, key);
         });
 
-        // Validation visuelle en temps réel sans changement du modèle
         input.addEventListener(
           "input",
           this.debounce(() => {
-            this.validateField(input, key, this.extractFieldValue(input), true); // visualOnly = true
+            this.validateField(input, key, this.extractFieldValue(input), true);
           }, 200)
         );
       } else {
-        // Pour les selects, radios, checkboxes : changement immédiat
         input.addEventListener("change", () => {
           this.handleFieldChange(input, key);
         });
@@ -61,11 +52,7 @@ export class UIManager {
     });
   }
 
-  /**
-   * Attache les listeners sur les boutons d'action
-   */
   attachButtonListeners() {
-    // Reset modules
     const resetBtn = document.getElementById("reset-btn");
     if (resetBtn) {
       resetBtn.addEventListener("click", () => {
@@ -74,15 +61,10 @@ export class UIManager {
       });
     }
 
-    // Traverses
     this.setupTraversesListeners();
   }
 
-  /**
-   * Configure la validation en temps réel
-   */
   setupValidation() {
-    // Règles de validation pour chaque champ
     this.fieldValidators.set("width", (value) =>
       ValidationRules.validateValue(value, ValidationRules.dimensions.width)
     );
@@ -103,7 +85,6 @@ export class UIManager {
       ValidationRules.validateValue(value, ValidationRules.porte.porteHeight)
     );
 
-    // CORRECTION: Validation souple pour modulesCount (avertissement seulement)
     this.fieldValidators.set("modulesCount", (value, config) => {
       if (value < 1 || value > 20) {
         return {
@@ -113,11 +94,10 @@ export class UIManager {
         };
       }
 
-      // Avertissement si hors bornes optimales mais on laisse passer
       const bounds = ModulesCalculator.calculateModulesBounds(config.width);
       if (value < bounds.min || value > bounds.max) {
         return {
-          valid: true, // On laisse passer
+          valid: true,
           corrected: value,
           message: `Optimal: ${bounds.min}-${bounds.max} modules pour cette largeur`,
         };
@@ -127,39 +107,25 @@ export class UIManager {
     });
   }
 
-  /**
-   * Gère le changement d'un champ
-   */
   handleFieldChange(input, key) {
-    // CORRECTION: Protection contre les changements en cascade
     if (this.isUpdatingUI) return;
 
     let value = this.extractFieldValue(input);
 
-    // Validation en temps réel
     const validation = this.validateField(input, key, value);
     if (!validation.valid && validation.corrected !== undefined) {
       value = validation.corrected;
       this.setFieldValue(input, value);
     }
 
-    // CORRECTION: Vérifier si la valeur a vraiment changé
     const currentValue = this.getConfigValueByKey(this.configModel.state, key);
     if (currentValue === value) {
-      return; // Pas de changement, pas de mise à jour
+      return;
     }
 
-    // Mise à jour du modèle
     this.setConfigValueByKey(key, value);
   }
 
-  /**
-   * Valide un champ spécifique
-   * @param {HTMLElement} input - Élément input
-   * @param {string} key - Clé de configuration
-   * @param {*} value - Valeur à valider (optionnel)
-   * @param {boolean} visualOnly - Si true, ne fait que l'affichage sans correction
-   */
   validateField(input, key, value = null, visualOnly = false) {
     if (value === null) {
       value = this.extractFieldValue(input);
@@ -172,10 +138,8 @@ export class UIManager {
       validation = validator(value, this.configModel.state);
     }
 
-    // Affichage du message d'erreur (toujours)
     this.displayFieldValidation(input, validation);
 
-    // Correction de la valeur seulement si pas en mode visualOnly
     if (
       !visualOnly &&
       !validation.valid &&
@@ -187,17 +151,12 @@ export class UIManager {
     return validation;
   }
 
-  /**
-   * Affiche la validation d'un champ
-   */
   displayFieldValidation(input, validation) {
-    // Supprime ancien message
     const existingError = input.parentNode.querySelector(".error-message");
     if (existingError) {
       existingError.remove();
     }
 
-    // Style du champ
     if (validation.valid) {
       input.classList.remove("error");
       input.classList.add("valid");
@@ -205,7 +164,6 @@ export class UIManager {
       input.classList.remove("valid");
       input.classList.add("error");
 
-      // Ajoute message d'erreur
       if (validation.message) {
         const errorDiv = document.createElement("div");
         errorDiv.className = "error-message";
@@ -215,9 +173,6 @@ export class UIManager {
     }
   }
 
-  /**
-   * Extrait la valeur d'un champ selon son type
-   */
   extractFieldValue(input) {
     if (input.type === "checkbox") {
       return input.checked;
@@ -230,12 +185,9 @@ export class UIManager {
       if (value === "false") return false;
       return value;
     } else {
-      // CORRECTION: Pour les selects, vérifier si la valeur doit être un nombre
       let value = input.value;
       if (value === "true") return true;
       if (value === "false") return false;
-
-      // CORRECTION: Pour modulesCount et porteIndex, convertir en nombre
       if (
         input.getAttribute("data-config-key") === "modulesCount" ||
         input.getAttribute("data-config-key") === "porteIndex"
@@ -247,9 +199,6 @@ export class UIManager {
     }
   }
 
-  /**
-   * Définit la valeur d'un champ selon son type
-   */
   setFieldValue(input, value) {
     if (input.type === "checkbox") {
       input.checked = Boolean(value);
@@ -260,13 +209,9 @@ export class UIManager {
     }
   }
 
-  /**
-   * Met à jour la configuration par clé imbriquée
-   */
   setConfigValueByKey(key, value) {
     const keys = key.split(".");
 
-    // CORRECTION: Pour les clés simples, utiliser updateState directement
     if (keys.length === 1) {
       const updateObj = {};
       updateObj[key] = value;
@@ -274,10 +219,8 @@ export class UIManager {
       return;
     }
 
-    // Pour les clés imbriquées, naviguer dans l'objet
     let target = this.configModel.state;
 
-    // Navigation dans l'objet
     for (let i = 0; i < keys.length - 1; i++) {
       const currentKey = keys[i];
 
@@ -287,23 +230,16 @@ export class UIManager {
       target = target[currentKey];
     }
 
-    // Application de la valeur
     const finalKey = keys[keys.length - 1];
     target[finalKey] = value;
 
-    // CORRECTION: Appeler performAutomaticCalculations pour tous les changements imbriqués
     this.configModel.performAutomaticCalculations();
 
-    // Validation et notification
     this.configModel.validate();
     this.eventBus.emit("configChanged", this.configModel.getConfig());
   }
 
-  /**
-   * Met à jour l'interface depuis la configuration
-   */
   updateFromConfig(config) {
-    // CORRECTION: Protection contre les boucles infinies
     if (this.isUpdatingUI) return;
 
     this.isUpdatingUI = true;
@@ -321,9 +257,6 @@ export class UIManager {
     }
   }
 
-  /**
-   * Met à jour tous les champs de formulaire
-   */
   updateFormFields(config) {
     document.querySelectorAll("[data-config-key]").forEach((input) => {
       if (this.lockedFields.has(input)) return;
@@ -334,9 +267,6 @@ export class UIManager {
     });
   }
 
-  /**
-   * Met à jour les options du select nombre de modules
-   */
   updateModulesCountOptions(config) {
     const select = document.getElementById("modulesCount");
     if (!select) return;
@@ -344,7 +274,6 @@ export class UIManager {
     const bounds = ModulesCalculator.calculateModulesBounds(config.width);
     const currentValue = config.modulesCount;
 
-    // Vide et reconstruit les options
     select.innerHTML = "";
     for (let i = bounds.min; i <= bounds.max; i++) {
       const option = document.createElement("option");
@@ -354,16 +283,12 @@ export class UIManager {
       select.appendChild(option);
     }
 
-    // Correction automatique si hors bornes
     if (currentValue < bounds.min || currentValue > bounds.max) {
       select.value = bounds.min;
       select.dispatchEvent(new Event("change"));
     }
   }
 
-  /**
-   * CORRECTION 3: Met à jour les inputs des modules de manière optimisée avec gestion du module imposé
-   */
   updateModulesInputs(config) {
     const container = document.getElementById("modules-width");
     if (!container) return;
@@ -372,7 +297,6 @@ export class UIManager {
       'input[data-config-key^="modules."]'
     );
 
-    // Calculs des états actuels et précédents
     const currentImposedModule = this.calculateImposedModuleIndex(config);
     const previousImposedModule = this.lastImposedModule || -1;
     const currentType = config.type;
@@ -381,23 +305,20 @@ export class UIManager {
       config.type === "porte" ? config.porteIndex : null;
     const previousPorteIndex = this.lastPorteIndex || null;
 
-    // ✅ CONDITION COMPLÈTE pour déclencher la reconstruction
     if (
       existingInputs.length !== config.modulesCount ||
       currentImposedModule !== previousImposedModule ||
       currentType !== previousType ||
-      currentPorteIndex !== previousPorteIndex // ← AJOUT CRUCIAL !
+      currentPorteIndex !== previousPorteIndex
     ) {
-      // Mettre à jour tous les trackers
       this.lastImposedModule = currentImposedModule;
       this.lastConfigType = currentType;
-      this.lastPorteIndex = currentPorteIndex; // ← NOUVEAU TRACKER
+      this.lastPorteIndex = currentPorteIndex;
 
       this.rebuildModulesInputs(config, container);
       return;
     }
 
-    // Mise à jour simple des valeurs (sans reconstruction)
     existingInputs.forEach((input, index) => {
       const module = config.modules[index];
       if (module && input.value != module.width) {
@@ -406,9 +327,6 @@ export class UIManager {
     });
   }
 
-  /**
-   * Reconstruit complètement les inputs des modules
-   */
   rebuildModulesInputs(config, container) {
     container.innerHTML = "";
 
@@ -433,18 +351,13 @@ export class UIManager {
       input.setAttribute("data-config-key", `modules.${i}.width`);
       input.style.width = "100px";
 
-      // CORRECTION : Listeners différents selon le type de module
       if (isPorteModule) {
-        // Module porte : aucun listener
         this.lockField(input, "Module porte, largeur imposée");
       } else if (isImposedModule) {
-        // Module imposé : listener spécial pour déverrouillage
         this.lockField(input, `Module imposé (${module.width}mm).`);
       } else {
-        // Module libre : listeners normaux
         this.unlockField(input);
 
-        // CORRECTION : Blur au lieu de focus pour éviter déverrouillage accidentel
         input.addEventListener("blur", () => {
           const newValue = parseInt(input.value);
           if (!isNaN(newValue) && newValue !== module.width) {
@@ -453,7 +366,6 @@ export class UIManager {
           }
         });
 
-        // Validation visuelle en temps réel
         input.addEventListener(
           "input",
           this.debounce(() => {
@@ -461,7 +373,6 @@ export class UIManager {
           }, 200)
         );
 
-        // Indication visuelle pour modules modifiés
         if (isModifiedByUser) {
           input.style.borderLeft = "3px solid #28a745";
           input.title = "Module modifié manuellement";
@@ -473,9 +384,6 @@ export class UIManager {
     }
   }
 
-  /**
-   * Gère le changement de largeur d'un module
-   */
   handleModuleWidthChange(index, value) {
     const numValue = Number(value);
     if (isNaN(numValue)) return;
@@ -483,18 +391,9 @@ export class UIManager {
     const validation = ModulesCalculator.validateModuleWidth(numValue);
     const finalValue = validation.corrected;
 
-    // CORRECTION : Utiliser setModuleWidth qui gère automatiquement le tracking
     this.configModel.setModuleWidth(index, finalValue);
-
-    // Pas besoin d'émettre l'événement, setModuleWidth le fait déjà
   }
 
-  /**
-   * Valide la largeur d'un module
-   * @param {HTMLElement} input - Input du module
-   * @param {number} index - Index du module
-   * @param {boolean} visualOnly - Si true, validation visuelle uniquement
-   */
   validateModuleWidth(input, index, visualOnly = false) {
     const value = Number(input.value);
     const validation = ModulesCalculator.validateModuleWidth(value);
@@ -512,24 +411,18 @@ export class UIManager {
 
     const isSerpen35m = config.porte?.serrure === "SERPEN35M";
 
-    // Afficher/masquer la div form-po66 selon la serrure
     this.toggleElement("#form-po66", isSerpen35m);
   }
 
-  /**
-   * Met à jour la visibilité des sections selon le type
-   */
   updatePorteUIVisibility(config) {
     const isPorte = config.type === "porte";
 
-    // Sections principales
     this.toggleSection("configuration-porte", isPorte);
     this.toggleSection("configuration-traverses-porte", isPorte);
     this.toggleSection("configuration-options-porte", isPorte);
     this.toggleElement("#label-modulePorte", isPorte);
     this.toggleElement("#modulePorte", isPorte);
 
-    // Logique conditionnelle dormant/imposte
     if (isPorte) {
       const withImposte =
         config.porte?.withImposte === true ||
@@ -538,7 +431,6 @@ export class UIManager {
       this.toggleElement("#label-dormant", !withImposte);
       this.toggleElement("#dormant", !withImposte);
 
-      // Largeur tierce
       const withTierce =
         config.porte?.withTierce === true ||
         config.porte?.withTierce === "true";
@@ -551,13 +443,9 @@ export class UIManager {
     }
   }
 
-  /**
-   * CORRECTION 3: Calcule quel module doit être imposé (dernier libre non modifié)
-   */
   calculateImposedModuleIndex(config) {
     const { modulesCount, type, porteIndex, moduleModifiedByUser } = config;
 
-    // Identifier les modules libres (non porte, non modifiés)
     const freeModules = [];
 
     for (let i = 0; i < modulesCount; i++) {
@@ -571,12 +459,11 @@ export class UIManager {
       }
     }
 
-    // Si il reste exactement 1 module libre, c'est lui qui est imposé
     if (freeModules.length === 1) {
       return freeModules[0];
     }
 
-    return -1; // Aucun module imposé
+    return -1;
   }
 
   updatePorteIndexOptions(config) {
@@ -586,7 +473,6 @@ export class UIManager {
     const currentValue = config.porteIndex;
     const modulesCount = config.modulesCount;
 
-    // Vide et reconstruit les options
     select.innerHTML = "";
     for (let i = 1; i <= modulesCount; i++) {
       const option = document.createElement("option");
@@ -596,12 +482,12 @@ export class UIManager {
       select.appendChild(option);
     }
 
-    // Si porteIndex dépasse le nombre de modules, ajuster
     if (currentValue > modulesCount) {
       select.value = modulesCount;
       select.dispatchEvent(new Event("change"));
     }
   }
+
   updateProfileAvailability(config) {
     const profileSelect = document.getElementById("po66-profile");
     if (!profileSelect) return;
@@ -612,36 +498,27 @@ export class UIManager {
     );
 
     if (po6622uOption) {
-      // CORRECTION: Inversion de la logique - PO6622U disponible SI hauteur >= 2204
       if (porteHeight <= 2204) {
-        // Hauteur suffisante : PO6622U disponible
         po6622uOption.disabled = false;
         po6622uOption.textContent = "PO6622U - Profil Porte Ouvrante 66 usiné";
         po6622uOption.style.color = "";
         po6622uOption.style.fontStyle = "";
       } else {
-        // Hauteur insuffisante : verrouiller PO6622U
         po6622uOption.disabled = true;
         po6622uOption.textContent =
           "PO6622U - Non disponible (hauteur > 2204mm)";
         po6622uOption.style.color = "#999";
         po6622uOption.style.fontStyle = "italic";
 
-        // Si PO6622U était sélectionné, basculer vers PO66
         if (profileSelect.value === "po6622u") {
           profileSelect.value = "po66";
-          // Déclencher l'événement change pour mettre à jour le modèle
           profileSelect.dispatchEvent(new Event("change"));
         }
       }
     }
   }
 
-  /**
-   * Met à jour l'état des champs (verrouillé/déverrouillé)
-   */
   updateFieldStates(config) {
-    // Hauteur de porte
     const porteHeightInput = document.querySelector(
       '[data-config-key="porte.porteHeight"]'
     );
@@ -654,17 +531,12 @@ export class UIManager {
       }
     }
 
-    // CORRECTION 2: Mise à jour de la disponibilité du profil selon la hauteur
     if (config.type === "porte") {
       this.updateProfileAvailability(config);
     }
   }
 
-  /**
-   * Met à jour les champs calculés
-   */
   updateCalculatedFields(config) {
-    // Dimensions d'ouverture
     const ouvertureElement = document.getElementById("dimensions-ouverture");
     if (ouvertureElement) {
       const dimensions = PorteCalculator.calculateDimensionsOuverture(config);
@@ -677,7 +549,6 @@ export class UIManager {
       }
     }
 
-    // Calcul automatique hauteur porte si verrouillée
     if (
       config.type === "porte" &&
       PorteCalculator.isPorteHeightLocked(config)
@@ -691,15 +562,11 @@ export class UIManager {
         Number(porteHeightInput.value) !== imposedHeight
       ) {
         porteHeightInput.value = imposedHeight;
-        // Met à jour le modèle sans déclencher d'événement circulaire
         this.configModel.state.porte.porteHeight = imposedHeight;
       }
     }
   }
 
-  /**
-   * Met à jour les listes de traverses
-   */
   updateTraversesLists(config) {
     this.updateTraversesSelect(config.traverses, "list-traverses", "Traverse");
     this.updateTraversesPorteSelect(
@@ -708,9 +575,6 @@ export class UIManager {
     );
   }
 
-  /**
-   * Met à jour le select des traverses principales
-   */
   updateTraversesSelect(traverses, selectId, prefix = "Traverse") {
     const select = document.getElementById(selectId);
     if (!select) return;
@@ -729,9 +593,6 @@ export class UIManager {
     }
   }
 
-  /**
-   * Met à jour le select des traverses de porte
-   */
   updateTraversesPorteSelect(traversesPorte, selectId) {
     const select = document.getElementById(selectId);
     if (!select) return;
@@ -750,11 +611,7 @@ export class UIManager {
     }
   }
 
-  /**
-   * Configure les listeners pour les traverses
-   */
   setupTraversesListeners() {
-    // Traverses principales
     document.getElementById("add-traverse")?.addEventListener("click", () => {
       this.showAddTraverseModal();
     });
@@ -765,7 +622,6 @@ export class UIManager {
         this.deleteSelectedTraverse("list-traverses");
       });
 
-    // Traverses porte
     document
       .getElementById("add-traverse-porte")
       ?.addEventListener("click", () => {
@@ -779,9 +635,6 @@ export class UIManager {
       });
   }
 
-  /**
-   * Affiche le modal d'ajout de traverse
-   */
   showAddTraverseModal() {
     if (document.getElementById("add-traverse-form")) return;
 
@@ -794,7 +647,6 @@ export class UIManager {
       heightMax: maxHeight,
       modulesCount: config.modulesCount,
 
-      // ✅ AJOUT : Passer les infos sur la porte
       hasPorte: config.type === "porte",
       porteIndex: config.porteIndex,
 
@@ -815,9 +667,6 @@ export class UIManager {
       .insertAdjacentElement("afterend", form);
   }
 
-  /**
-   * Affiche le modal d'ajout de traverse porte
-   */
   showAddTraversePorteModal() {
     if (document.getElementById("add-traverse-porte-form")) return;
 
@@ -852,9 +701,6 @@ export class UIManager {
       .insertAdjacentElement("afterend", form);
   }
 
-  /**
-   * Crée un formulaire de traverse
-   */
   createTraverseForm(id, options) {
     const form = document.createElement("form");
     form.id = id;
@@ -879,7 +725,7 @@ export class UIManager {
       </div>
       ${
         options.hasPorte
-          ? '<small style="color: #dc3545; font-style: italic;">⚠️ Le module contenant la porte ne peut pas avoir de traverse</small>'
+          ? '<small style="color: #dc3545; font-style: italic;">Le module contenant la porte ne peut pas avoir de traverse</small>'
           : ""
       }
     </div>
@@ -890,14 +736,12 @@ export class UIManager {
     <div class="error-container"></div>
   `;
 
-    // Listeners simplifiés
     this.attachTraverseFormListeners(form, options);
 
     return form;
   }
 
   attachTraverseFormListeners(form, options) {
-    // Listener submit avec validation améliorée
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
@@ -909,13 +753,11 @@ export class UIManager {
         parseInt(cb.value)
       );
 
-      // Validation
       if (modules.length === 0) {
         this.showError(form, "Sélectionnez au moins un module !");
         return;
       }
 
-      // Double vérification : S'assurer qu'aucun module porte n'est sélectionné
       if (options.hasPorte && modules.includes(options.porteIndex)) {
         this.showError(
           form,
@@ -936,7 +778,6 @@ export class UIManager {
       options.onSubmit({ height, modules });
     });
 
-    // Listener cancel
     form
       .querySelector(".cancel-btn")
       .addEventListener("click", options.onCancel);
@@ -950,7 +791,6 @@ export class UIManager {
     infoDiv.style.fontSize = "0.85rem";
     infoDiv.style.color = "#495057";
 
-    // Fonction pour mettre à jour l'info
     const updateInfo = () => {
       const selectedCount = form.querySelectorAll(
         'input[type="checkbox"]:checked:not(:disabled)'
@@ -967,18 +807,15 @@ export class UIManager {
     `;
     };
 
-    // Ajouter listeners aux checkboxes
     checkboxes.forEach((checkbox) => {
       if (!checkbox.disabled) {
         checkbox.addEventListener("change", updateInfo);
       }
     });
 
-    // Ajouter l'info au formulaire
     const modulesGroup = form.querySelector(".form-group:last-of-type");
     modulesGroup.appendChild(infoDiv);
 
-    // Mise à jour initiale
     updateInfo();
   }
 
@@ -989,11 +826,9 @@ export class UIManager {
       const moduleNumber = i + 1;
       const isPorteModule = hasPorte && moduleNumber === porteIndex;
 
-      // Déterminer l'état de la checkbox
-      const isChecked = !isPorteModule; // Cochée par défaut sauf pour le module porte
-      const isDisabled = isPorteModule; // Désactivée pour le module porte
+      const isChecked = !isPorteModule;
+      const isDisabled = isPorteModule;
 
-      // Déterminer le texte et le style
       let labelText = `Module ${moduleNumber}`;
       let labelStyle = "";
       let checkboxStyle = "";
@@ -1019,9 +854,6 @@ export class UIManager {
     }).join("");
   }
 
-  /**
-   * Crée un formulaire de traverse porte
-   */
   createTraversePorteForm(id, options) {
     const form = document.createElement("form");
     form.id = id;
@@ -1076,7 +908,6 @@ export class UIManager {
       <div class="error-container"></div>
     `;
 
-    // Listeners
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const height = parseInt(form.height.value);
@@ -1084,7 +915,6 @@ export class UIManager {
       const onPorte = form.onPorte?.checked || false;
       const onTierce = form.onTierce?.checked || false;
 
-      // Validation : au moins une case cochée
       if (!onPorte && !onTierce) {
         this.showError(
           form,
@@ -1102,7 +932,6 @@ export class UIManager {
         return;
       }
 
-      // Créer les traverses selon les sélections
       try {
         if (onPorte) {
           options.onSubmit({ height, type, onPorte: true, onTierce: false });
@@ -1115,27 +944,25 @@ export class UIManager {
       }
     });
 
-    // Validation en temps réel
     const heightInput = form.querySelector('input[name="height"]');
     heightInput.addEventListener("input", () => {
       const height = parseInt(heightInput.value);
       if (!isNaN(height)) {
         const config = this.configModel.state;
 
-        // Vérifier les conflits sur porte et tierce séparément
         const porteConflict =
           TraversesCalculator.checkTraversePorteSpecificConflict(
             config.traversesPorte,
             height,
             true,
-            false // onPorte=true, onTierce=false
+            false
           );
         const tierceConflict = config.porte?.withTierce
           ? TraversesCalculator.checkTraversePorteSpecificConflict(
               config.traversesPorte,
               height,
               false,
-              true // onPorte=false, onTierce=true
+              true
             )
           : { conflict: false };
 
@@ -1158,9 +985,6 @@ export class UIManager {
     return form;
   }
 
-  /**
-   * Supprime la traverse sélectionnée
-   */
   deleteSelectedTraverse(selectId) {
     const select = document.getElementById(selectId);
     const selectedId = select?.value;
@@ -1173,9 +997,6 @@ export class UIManager {
     this.eventBus.emit("configChanged", this.configModel.getConfig());
   }
 
-  /**
-   * Supprime la traverse de porte sélectionnée
-   */
   deleteSelectedTraversePorte(selectId) {
     const select = document.getElementById(selectId);
     const selectedId = select?.value;
@@ -1188,9 +1009,6 @@ export class UIManager {
     this.eventBus.emit("configChanged", this.configModel.getConfig());
   }
 
-  /**
-   * Verrouille un champ
-   */
   lockField(input, tooltip = "Champ calculé automatiquement") {
     input.readOnly = true;
     input.style.backgroundColor = "#f5f5f5";
@@ -1199,9 +1017,6 @@ export class UIManager {
     this.lockedFields.add(input);
   }
 
-  /**
-   * Déverrouille un champ
-   */
   unlockField(input) {
     input.readOnly = false;
     input.style.backgroundColor = "";
@@ -1210,9 +1025,6 @@ export class UIManager {
     this.lockedFields.delete(input);
   }
 
-  /**
-   * Affiche/masque un élément
-   */
   toggleElement(selector, show) {
     const element =
       typeof selector === "string"
@@ -1223,9 +1035,6 @@ export class UIManager {
     }
   }
 
-  /**
-   * Affiche/masque une section
-   */
   toggleSection(id, show) {
     const section = document.getElementById(id);
     if (section) {
@@ -1233,9 +1042,6 @@ export class UIManager {
     }
   }
 
-  /**
-   * Affiche une erreur dans un formulaire
-   */
   showError(form, message) {
     const container = form.querySelector(".error-container");
     if (container) {
@@ -1246,9 +1052,6 @@ export class UIManager {
     }
   }
 
-  /**
-   * Récupère une valeur de configuration par clé imbriquée
-   */
   getConfigValueByKey(obj, key) {
     return key.split(".").reduce((acc, k) => {
       if (!isNaN(k) && Array.isArray(acc)) {
@@ -1258,9 +1061,6 @@ export class UIManager {
     }, obj);
   }
 
-  /**
-   * Utilitaire debounce pour limiter les appels
-   */
   debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {

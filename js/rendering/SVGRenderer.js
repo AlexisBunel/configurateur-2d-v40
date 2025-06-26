@@ -1,4 +1,3 @@
-// ===== js/rendering/SVGRenderer.js =====
 export class SVGRenderer {
   constructor(eventBus) {
     this.eventBus = eventBus;
@@ -24,11 +23,10 @@ export class SVGRenderer {
         config.options?.colorProfile
       );
 
-      // Modifier le fond du SVG si profil blanc
       if (profileColor === "#ffffff") {
         this.svg.style.backgroundColor = "#ddd";
       } else {
-        this.svg.style.backgroundColor = "white"; // ou ce que tu veux en fond normal
+        this.svg.style.backgroundColor = "white";
       }
 
       this.drawModules(config, profileColor);
@@ -87,7 +85,6 @@ export class SVGRenderer {
       const moduleWidth = module.width * this.scale;
       const height = config.height * this.scale;
 
-      // --- Profil gauche du module ---
       if (i === 0 || isPorteModule) {
         const x = currentX;
         const y = this.origin.y - height;
@@ -96,7 +93,7 @@ export class SVGRenderer {
           const dormantThickness = 51 * this.scale;
           this.porteDormantGaucheX = currentX;
           console.log(
-            "✅ Mémorisation porteDormantGaucheX =",
+            "Mémorisation porteDormantGaucheX =",
             this.porteDormantGaucheX
           );
           this.drawRect(x, y, dormantThickness, height, profileColor);
@@ -108,7 +105,6 @@ export class SVGRenderer {
         }
       }
 
-      // --- Profils horizontaux du module ---
       const topY = this.origin.y - height;
       const bottomY = this.origin.y - 40 * this.scale;
 
@@ -143,9 +139,7 @@ export class SVGRenderer {
             profileColor
           );
         }
-        // En bas : rien
       } else {
-        // PC40 haut + bas prolongés jusqu'au prochain module porte ou bord droit
         let totalWidth = moduleWidth;
 
         for (let j = i + 1; j < config.modulesCount; j++) {
@@ -166,7 +160,6 @@ export class SVGRenderer {
           profileColor
         );
 
-        // Traverses horizontales du module courant
         const traverses = config.traverses || [];
         traverses.forEach((traverse) => {
           if (traverse.modules.includes(i + 1)) {
@@ -184,7 +177,6 @@ export class SVGRenderer {
         });
       }
 
-      // --- Séparateur vertical (droite du module) ---
       if (i < config.modulesCount - 1) {
         const nextIsPorteModule =
           config.type === "porte" && config.porteIndex === i + 2;
@@ -192,12 +184,11 @@ export class SVGRenderer {
         const y = this.origin.y - height;
 
         if (isPorteModule) {
-          // Si le module courant est la porte → dormant 51mm à droite
           const dormantThickness = 51 * this.scale;
           const dormantDroitX = currentX + moduleWidth;
           this.porteDormantDroitX = dormantDroitX;
           console.log(
-            "✅ Mémorisation porteDormantDroitX =",
+            "Mémorisation porteDormantDroitX =",
             this.porteDormantDroitX
           );
           this.drawRect(
@@ -213,7 +204,7 @@ export class SVGRenderer {
             const dormantDroitX = currentX + moduleWidth;
             this.porteDormantDroitX = dormantDroitX;
             console.log(
-              "✅ Mémorisation porteDormantDroitX =",
+              "Mémorisation porteDormantDroitX =",
               this.porteDormantDroitX
             );
             this.drawRect(
@@ -235,11 +226,9 @@ export class SVGRenderer {
           }
         }
       }
-
-      // --- Avancer X de la largeur du module ---
       currentX += moduleWidth;
     }
-    // --- Profil vertical droit de la verrière (après le dernier module) ---
+
     const lastModule = config.modules[config.modulesCount - 1];
     const isLastPorteModule =
       config.type === "porte" && config.porteIndex === config.modulesCount;
@@ -250,10 +239,7 @@ export class SVGRenderer {
       const dormantThickness = 51 * this.scale;
       const dormantDroitX = currentX;
       this.porteDormantDroitX = dormantDroitX;
-      console.log(
-        "✅ Mémorisation porteDormantDroitX =",
-        this.porteDormantDroitX
-      );
+      console.log("Mémorisation porteDormantDroitX =", this.porteDormantDroitX);
       this.drawRect(currentX, y, dormantThickness, height, profileColor);
     } else {
       const pt40Thickness = 40 * this.scale;
@@ -275,11 +261,9 @@ export class SVGRenderer {
     const sensOuverture = config.porte?.sensOuverture;
     const withTierce = config.porte?.withTierce;
 
-    // Profils porte
     let porteGauche = 40;
     let porteDroite = 40;
 
-    // Profils tierce
     let tierceGauche = 40;
     let tierceDroite = 40;
 
@@ -295,7 +279,6 @@ export class SVGRenderer {
           porteDroite = 40;
         }
       } else {
-        // invisible
         tierceGauche = 53;
         tierceDroite = 40;
         if (serrure === "SERPEN35M") {
@@ -332,7 +315,6 @@ export class SVGRenderer {
           porteDroite = 40;
         }
       } else {
-        // invisible
         tierceGauche = 40;
         tierceDroite = 53;
         if (serrure === "SERPEN35M") {
@@ -364,75 +346,63 @@ export class SVGRenderer {
     const scale = this.scale;
     const height = config.height * scale;
 
-    // Valeur d'espacement configurable
     const spacing = 8 * scale;
 
-    // Sécurisation
     if (typeof this.porteDormantGaucheX !== "number") {
       console.warn(
-        "⚠️ porteDormantGaucheX non défini → on ne dessine pas la porte"
+        "porteDormantGaucheX non défini → on ne dessine pas la porte"
       );
       return;
     }
 
     if (typeof this.porteDormantDroitX !== "number") {
       console.warn(
-        "⚠️ porteDormantDroitX non défini → on ne dessine pas la porte"
+        "porteDormantDroitX non défini → on ne dessine pas la porte"
       );
       return;
     }
 
-    // Récupérer les profils
     const profiles = this.getPorteProfiles(config);
     const keys = Object.keys(profiles);
 
-    // Largeurs nettes de la porte et de la tierce (en mm)
     const porteWidthMM = Number(config.porte?.porteWidth || 0);
     const tierceWidthMM =
       config.porte?.withTierce === true || config.porte?.withTierce === "true"
         ? Number(config.porte?.tierceWidth || 0)
         : 0;
 
-    // Espace disponible entre les 2 PTPV51/PTCI51
     const dormantGaucheX = this.porteDormantGaucheX;
     const dormantDroitX = this.porteDormantDroitX;
     const dormantThickness = 51 * scale;
 
     const availableSpace = dormantDroitX - (dormantGaucheX + dormantThickness);
 
-    // Nombre d'espacements :
-    let spacingsCount = 2; // entre dormant gauche et 1er profil + dernier profil et dormant droit
-    spacingsCount += keys.length - 1; // entre chaque profil
+    let spacingsCount = 2;
+    spacingsCount += keys.length - 1;
 
     const totalSpacing = spacingsCount * spacing;
 
-    // Total épaisseurs de profils
     let totalProfilesThickness = 0;
     for (const key of keys) {
       totalProfilesThickness += profiles[key] * scale;
     }
 
-    // Espace restant pour les largeurs nettes (porte et tierce)
     const spaceForWidths =
       availableSpace - totalSpacing - totalProfilesThickness;
 
-    // Calcul des ratios
     const sumWidthsMM = porteWidthMM + tierceWidthMM;
     const porteRatio = porteWidthMM / sumWidthsMM;
     const tierceRatio = tierceWidthMM / sumWidthsMM;
 
-    // Largeurs réelles en px
     const porteWidthPx = porteRatio * spaceForWidths;
     const tierceWidthPx = tierceRatio * spaceForWidths;
 
-    // --- Calcul de la hauteur des profils ---
     let profileHeight;
 
     if (
       config.porte?.withImposte === true ||
       config.porte?.withImposte === "true"
     ) {
-      // Il faut être "spacing" en dessous du dormant imposte
       const yDormant =
         this.origin.y - (config.porte?.porteHeight + 66) * this.scale;
       const dormantThicknessImposte = 51 * this.scale;
@@ -442,14 +412,11 @@ export class SVGRenderer {
       config.porte?.withDormant === true ||
       config.porte?.withDormant === "true"
     ) {
-      // On enlève 51 mm + spacing
       profileHeight = height - (51 * scale + spacing);
     } else {
-      // Cas par défaut : pleine hauteur
       profileHeight = height;
     }
 
-    // --- On dessine les profils ---
     let currentX = dormantGaucheX + dormantThickness + spacing;
 
     let tierceStartX = null;
@@ -458,14 +425,11 @@ export class SVGRenderer {
     for (const key of keys) {
       const thickness = profiles[key] * scale;
 
-      // Dessin du profil vertical "posé au sol"
       const yProfile = this.origin.y - profileHeight;
       this.drawRect(currentX, yProfile, thickness, profileHeight, profileColor);
 
-      // Avancer après le profil + spacing
       currentX += thickness + spacing;
 
-      // Si c'est un "profil gauche", on mémorise la position de départ
       if (key === "tierceGauche") {
         tierceStartX = currentX - spacing;
         currentX += tierceWidthPx;
@@ -476,12 +440,9 @@ export class SVGRenderer {
       }
     }
 
-    // --- Traverses hautes et basses ---
     const traverseThickness = 40 * scale;
 
-    // Traverses tierce
     if (tierceStartX !== null) {
-      // Traverse haute tierce
       this.drawRect(
         tierceStartX,
         this.origin.y - profileHeight,
@@ -490,7 +451,6 @@ export class SVGRenderer {
         profileColor
       );
 
-      // Traverse basse tierce
       this.drawRect(
         tierceStartX,
         this.origin.y - traverseThickness,
@@ -500,9 +460,7 @@ export class SVGRenderer {
       );
     }
 
-    // Traverses porte
     if (porteStartX !== null) {
-      // Traverse haute porte
       this.drawRect(
         porteStartX,
         this.origin.y - profileHeight,
@@ -511,7 +469,6 @@ export class SVGRenderer {
         profileColor
       );
 
-      // Traverse basse porte
       this.drawRect(
         porteStartX,
         this.origin.y - traverseThickness,
@@ -521,14 +478,12 @@ export class SVGRenderer {
       );
     }
 
-    // --- Traverses intermédiaires (porte et tierce) ---
     const traversesPorte = config.traversesPorte || [];
 
     traversesPorte.forEach((traverse) => {
       const traverseY = this.origin.y - traverse.height * scale - 20 * scale;
-      const traverseThickness = Number(traverse.type) * scale; // 28 mm ou 37 mm
+      const traverseThickness = Number(traverse.type) * scale;
 
-      // Traverse sur la tierce
       if (traverse.onTierce && tierceStartX !== null) {
         this.drawRect(
           tierceStartX,
@@ -539,7 +494,6 @@ export class SVGRenderer {
         );
       }
 
-      // Traverse sur la porte
       if (traverse.onPorte && porteStartX !== null) {
         this.drawRect(
           porteStartX,
@@ -560,7 +514,6 @@ export class SVGRenderer {
       height,
       fill: color,
       stroke: "none",
-      // "stroke-width": 1,
     });
 
     this.svg.appendChild(rect);

@@ -36,7 +36,6 @@ export class PT40Calculator {
     let nombreTraversesVerticales = 0;
 
     if (type === "porte") {
-      // CORRECTION: Logique selon la position de la porte
       if (porteIndex === 1 || porteIndex === modulesCount) {
         // Porte en position extrême (début ou fin)
         // La porte "enlève" 2 traverses (une de chaque côté du module porte)
