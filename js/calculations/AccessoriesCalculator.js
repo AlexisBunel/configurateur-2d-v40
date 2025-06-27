@@ -1473,13 +1473,11 @@ export class AccessoriesCalculator {
         category: "traverse",
       });
 
+      let largeurTierceInterne = 0;
       if (withTierce) {
-        let largeurTierceInterne;
-        if (isVisible) {
-          largeurTierceInterne = tierceWidth - 40 - 40;
-        } else {
-          largeurTierceInterne = tierceWidth - 53 - 40;
-        }
+        largeurTierceInterne = isVisible
+          ? tierceWidth - 40 - 40
+          : tierceWidth - 53 - 40;
 
         profiles.push({
           ref: "THB40",

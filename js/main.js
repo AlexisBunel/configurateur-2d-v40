@@ -300,23 +300,6 @@ class VerrierApp {
     document.body.appendChild(debugIndicator);
   }
 
-  autoSaveEnabled() {
-    // return localStorage.getItem("verriere_autosave") !== "false";
-    return false;
-  }
-
-  debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
-
   getConfig() {
     return this.configModel.getConfig();
   }

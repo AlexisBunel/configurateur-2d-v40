@@ -252,11 +252,4 @@ export class PDFExporter {
       return { profiles: [], total: "0,00 €" };
     }
   }
-
-  async export(configData = null, profilesData = null) {
-    const config = configData || this.getConfigurationData();
-    const profiles = profilesData || this.getProfilesData();
-
-    await this.exportPDF();
-  }
 }

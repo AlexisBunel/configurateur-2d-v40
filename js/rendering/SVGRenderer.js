@@ -247,14 +247,6 @@ export class SVGRenderer {
     }
   }
 
-  getDormantTopY(config) {
-    return this.origin.y - config.height * this.scale;
-  }
-
-  getDormantHeight(config) {
-    return config.height * this.scale;
-  }
-
   getPorteProfiles(config) {
     const serrure = config.porte?.serrure;
     const charniereType = config.porte?.charniereType;

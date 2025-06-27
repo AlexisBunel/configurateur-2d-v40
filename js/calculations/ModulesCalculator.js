@@ -52,8 +52,4 @@ export class ModulesCalculator {
     }
     return { valid: true, corrected: width };
   }
-
-  static getTotalModulesWidth(modules) {
-    return modules.reduce((sum, module) => sum + (module.width || 0), 0);
-  }
 }

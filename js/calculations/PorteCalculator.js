@@ -179,12 +179,4 @@ export class PorteCalculator {
     if (value === "false") return false;
     return defaultValue;
   }
-
-  static formatDimensions(dimensions) {
-    return `${dimensions.hauteur}mm × ${dimensions.largeur}mm`;
-  }
-
-  static calculateAngleOuverture(config) {
-    return 90;
-  }
 }

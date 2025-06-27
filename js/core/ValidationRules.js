@@ -198,18 +198,4 @@ export class ValidationRules {
     if (value === "false") return false;
     return defaultValue;
   }
-
-  static getFieldHelp(fieldPath) {
-    const helpMessages = {
-      width: "Largeur totale de la verrière (400-5000mm)",
-      height: "Hauteur totale de la verrière (400-5000mm)",
-      "porte.porteWidth": "Largeur de la porte (400-1230mm)",
-      "porte.tierceWidth": "Largeur de la tierce (300-1230mm)",
-      "porte.porteHeight": "Hauteur de la porte (500-4000mm)",
-      modulesCount: "Nombre de modules calculé selon la largeur",
-      "modules.width": "Largeur du module (200-2000mm)",
-    };
-
-    return helpMessages[fieldPath] || "";
-  }
 }
