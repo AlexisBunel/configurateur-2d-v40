@@ -17,22 +17,15 @@ class VerrierApp {
 
   async init() {
     try {
-      console.log("🚀 Initialisation Configurateur Verrière V40...");
-
       this.configModel = new ConfigModel({}, this.eventBus);
-      console.log("✅ ConfigModel initialisé");
 
       this.uiManager = new UIManager(this.configModel, this.eventBus);
-      console.log("✅ UIManager initialisé");
 
       this.tableRenderer = new TableRenderer(this.eventBus);
-      console.log("✅ TableRenderer initialisé");
 
       this.pdfExporter = new PDFExporter(this.eventBus);
-      console.log("✅ PDFExporter initialisé");
 
       this.svgRenderer = new SVGRenderer(this.eventBus);
-      console.log("✅ SVGRenderer initialisé");
 
       this.setupGlobalEvents();
 
@@ -48,7 +41,7 @@ class VerrierApp {
         this.enableDebugMode();
       }
     } catch (error) {
-      console.error("❌ Erreur lors de l'initialisation :", error);
+      console.error("Erreur lors de l'initialisation :", error);
       this.showErrorMessage("Erreur d'initialisation de l'application");
     }
   }
@@ -110,29 +103,12 @@ class VerrierApp {
   }
 
   loadSavedConfig() {
-    console.log(
-      "Utilisation de la configuration par défaut (chargement désactivé)"
-    );
     try {
       localStorage.removeItem("verriere_config");
       localStorage.removeItem("autosave_config");
     } catch (error) {
       console.warn("Impossible de nettoyer le stockage :", error);
     }
-
-    // try {
-    //   const loaded = this.configModel.loadFromStorage();
-    //   if (loaded) {
-    //     console.log("Configuration chargée depuis le stockage");
-    //   } else {
-    //     console.log("Utilisation de la configuration par défaut");
-    //   }
-    // } catch (error) {
-    //   console.warn(
-    //     "Impossible de charger la configuration sauvegardée :",
-    //     error
-    //   );
-    // }
   }
 
   saveConfig() {
@@ -264,8 +240,8 @@ class VerrierApp {
   isDevelopmentMode() {
     return (
       window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.search.includes("debug=true")
+      (window.location.hostname === "127.0.0.1" &&
+        window.location.search.includes("debug=true"))
     );
   }
 
@@ -394,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
           max-width: 500px;
           text-align: center;
         ">
-          <h1 style="color: #dc3545; margin-bottom: 20px;">⚠️ Erreur de démarrage</h1>
+          <h1 style="color: #dc3545; margin-bottom: 20px;">Erreur de démarrage</h1>
           <p style="color: #6c757d; margin-bottom: 20px;">
             L'application n'a pas pu se charger correctement.
           </p>

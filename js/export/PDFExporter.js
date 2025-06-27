@@ -8,18 +8,12 @@ export class PDFExporter {
   }
 
   async init() {
-    // Charger jsPDF depuis CDN
     await this.loadJsPDF();
 
-    // Attacher le listener au bouton
     this.attachExportListener();
   }
 
-  /**
-   * Charge la bibliothèque jsPDF depuis CDN
-   */
   async loadJsPDF() {
-    // Vérifier si jsPDF est déjà chargé
     if (window.jsPDF) {
       this.jsPDF = window.jsPDF.jsPDF || window.jsPDF;
       return;
@@ -31,43 +25,34 @@ export class PDFExporter {
         "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
 
       script.onload = () => {
-        // Attendre un peu que la bibliothèque soit complètement chargée
         setTimeout(() => {
           try {
             if (window.jsPDF && window.jsPDF.jsPDF) {
-              // Ancienne détection, peu probable ici
               this.jsPDF = window.jsPDF.jsPDF;
               resolve();
             } else if (window.jsPDF) {
               this.jsPDF = window.jsPDF;
               resolve();
             } else if (window.jspdf && window.jspdf.jsPDF) {
-              // C’EST TON CAS ACTUEL !
               this.jsPDF = window.jspdf.jsPDF;
               resolve();
             } else if (window.jspdf && window.jspdf.default) {
-              // Certains CDN font ça
               this.jsPDF = window.jspdf.default;
               resolve();
             } else {
-              console.error("❌ jsPDF non trouvé dans window");
-              console.log(
-                "Window keys:",
-                Object.keys(window).filter((k) =>
-                  k.toLowerCase().includes("pdf")
-                )
-              );
+              console.error("jsPDF non trouvé dans window");
+
               reject(new Error("jsPDF non accessible"));
             }
           } catch (error) {
-            console.error("❌ Erreur accès jsPDF:", error);
+            console.error("Erreur accès jsPDF:", error);
             reject(error);
           }
         }, 100);
       };
 
       script.onerror = (error) => {
-        console.error("❌ Erreur chargement script jsPDF:", error);
+        console.error("Erreur chargement script jsPDF:", error);
         reject(new Error("Impossible de charger jsPDF"));
       };
 
@@ -91,16 +76,13 @@ export class PDFExporter {
       };
 
       img.onerror = () => {
-        console.warn("⚠️ Impossible de charger le logo : img/logo.png");
+        console.warn("Impossible de charger le logo : img/logo.png");
         this.logoBase64 = null;
         resolve();
       };
     });
   }
 
-  /**
-   * Attache le listener au bouton d'export
-   */
   attachExportListener() {
     const exportBtn = document.getElementById("export-pdf");
     if (exportBtn) {
@@ -108,25 +90,15 @@ export class PDFExporter {
         this.exportPDF();
       });
 
-      // Ajouter un titre informatif
       exportBtn.title = "Générer un PDF avec le récapitulatif et les débits";
-
-      console.log("✅ Listener export PDF attaché");
     } else {
-      console.warn("⚠️ Bouton export-pdf non trouvé");
+      console.warn("Bouton export-pdf non trouvé");
     }
   }
 
-  /**
-   * Génère et ouvre le PDF
-   */
   async exportPDF() {
     try {
-      console.log("🔄 Début génération PDF...");
-
-      // Vérifier que jsPDF est chargé
       if (!this.jsPDF) {
-        console.log("📥 Rechargement de jsPDF...");
         await this.loadJsPDF();
         await this.loadLogo();
       }
@@ -135,13 +107,8 @@ export class PDFExporter {
         throw new Error("jsPDF non disponible après chargement");
       }
 
-      console.log("📊 Récupération des données...");
-
-      // Récupérer les données nécessaires
       const config = this.getConfigurationData();
       const profilesData = this.getProfilesData();
-
-      console.log("📄 Création du document PDF...");
 
       // Créer le PDF
       const doc = new this.jsPDF({
@@ -150,42 +117,28 @@ export class PDFExporter {
         format: "a4",
       });
 
-      // Générer le contenu
       this.generatePDFContent(doc, config, profilesData);
 
-      console.log("🚀 Ouverture du PDF...");
-
-      // Ouvrir dans un nouvel onglet
       const pdfBlob = doc.output("blob");
       const pdfUrl = URL.createObjectURL(pdfBlob);
 
-      // Ouvrir dans un nouvel onglet
       const newWindow = window.open(pdfUrl, "_blank");
 
       if (!newWindow) {
-        // Si le popup est bloqué, proposer le téléchargement
         const link = document.createElement("a");
         link.href = pdfUrl;
         link.download = `verriere_config_${new Date().getTime()}.pdf`;
         link.click();
-        console.log("📥 PDF téléchargé (popup bloqué)");
-      } else {
-        console.log("✅ PDF ouvert dans nouvel onglet");
       }
     } catch (error) {
-      console.error("❌ Erreur génération PDF:", error);
+      console.error("Erreur génération PDF:", error);
 
-      // Message d'erreur détaillé pour debug
       const errorMsg = `Erreur lors de la génération du PDF:\n${error.message}\n\nVérifiez la console pour plus de détails.`;
       alert(errorMsg);
     }
   }
 
-  generatePDFContent(
-    doc,
-    config,
-    profilesData /* , accessoriesData, glassData */
-  ) {
+  generatePDFContent(doc, config, profilesData) {
     let yPosition = 15;
 
     // ----- HEADER -----
@@ -194,12 +147,12 @@ export class PDFExporter {
       doc.addImage(this.logoBase64, "PNG", 15, yPosition - 5, 30, 30);
     }
 
-    // Titre centré
+    // Titre
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
     doc.text("Verrière V40", 105, yPosition + 5, { align: "center" });
 
-    // Date + heure à droite
+    // Date + heure
     const now = new Date();
     const dateStr = now.toLocaleDateString("fr-FR");
     const timeStr = now.toLocaleTimeString("fr-FR", {
@@ -215,31 +168,22 @@ export class PDFExporter {
     doc.setLineWidth(0.5);
     doc.line(15, yPosition + 15, 200 - 15, yPosition + 15);
 
-    // Position de départ pour le reste du contenu
     yPosition += 30;
 
-    // === Ici tu enchaînes avec ton contenu habituel ===
-    // Exemple :
     doc.setFontSize(14);
     doc.text("Récapitulatif de la configuration", 20, yPosition);
     yPosition += 10;
-
-    // ... le reste de ton code existant continue ici ...
   }
 
-  /**
-   * Récupère les données de configuration
-   */
   getConfigurationData() {
     try {
-      // Récupérer depuis le configModel via l'app globale
       const config = window.verrierApp?.getConfig();
       if (!config) {
         throw new Error("Configuration non accessible");
       }
 
       return {
-        dimensions: `${config.width} × ${config.height} mm`,
+        dimensions: `${config.width} x ${config.height} mm`,
         type:
           config.type === "porte" ? "Avec porte battante" : "Verrière pleine",
         modules: `${config.modulesCount} modules`,
@@ -267,14 +211,10 @@ export class PDFExporter {
     }
   }
 
-  /**
-   * Récupère les données du tableau des profilés
-   */
   getProfilesData() {
     const profiles = [];
 
     try {
-      // Récupérer depuis le tableau DOM
       const tbody = document.querySelector("#profiles tbody");
       if (!tbody) {
         throw new Error("Tableau profiles non trouvé");
@@ -297,7 +237,6 @@ export class PDFExporter {
         }
       });
 
-      // Récupérer le total depuis le sous-total
       let totalProfiles = "0,00 €";
       const subtotalRow = tbody.querySelector(".table-subtotal-row");
       if (subtotalRow) {
@@ -307,18 +246,13 @@ export class PDFExporter {
         }
       }
 
-      console.log(`📊 ${profiles.length} profils récupérés pour le PDF`);
-
       return { profiles, total: totalProfiles };
     } catch (error) {
-      console.error("❌ Erreur récupération profiles:", error);
+      console.error("Erreur récupération profiles:", error);
       return { profiles: [], total: "0,00 €" };
     }
   }
 
-  /**
-   * Méthode publique pour export manuel
-   */
   async export(configData = null, profilesData = null) {
     const config = configData || this.getConfigurationData();
     const profiles = profilesData || this.getProfilesData();

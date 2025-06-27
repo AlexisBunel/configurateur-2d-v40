@@ -1,4 +1,3 @@
-// ===== js/core/ConfigModel.js =====
 import { ModulesCalculator } from "../calculations/ModulesCalculator.js";
 import { PorteCalculator } from "../calculations/PorteCalculator.js";
 import { TraversesCalculator } from "../calculations/TraversesCalculator.js";
@@ -8,9 +7,8 @@ export class ConfigModel {
   constructor(initialConfig = {}, eventBus = null) {
     this.eventBus = eventBus;
     this.state = this.getDefaultConfig();
-    this.isUpdating = false; // Évite les boucles infinies
+    this.isUpdating = false;
 
-    // Applique la config initiale
     if (Object.keys(initialConfig).length > 0) {
       this.updateState(initialConfig, false);
     }
@@ -18,9 +16,6 @@ export class ConfigModel {
     this.validate();
   }
 
-  /**
-   * Configuration par défaut
-   */
   getDefaultConfig() {
     return {
       width: 4000,
@@ -60,28 +55,20 @@ export class ConfigModel {
     };
   }
 
-  /**
-   * Met à jour l'état de manière contrôlée
-   */
   updateState(newValues = {}, notify = true) {
     if (this.isUpdating) return this.state;
 
     this.isUpdating = true;
 
     try {
-      // CORRECTION: Vérifier si les valeurs ont vraiment changé avant de notifier
       const hasChanged = this.hasStateChanged(newValues);
 
-      // Mise à jour de l'état
       this.state = { ...this.state, ...newValues };
 
-      // Recalculs automatiques si nécessaire
       this.performAutomaticCalculations();
 
-      // Validation
       this.validate();
 
-      // Notification seulement si vraiment changé
       if (notify && hasChanged && this.eventBus) {
         this.eventBus.emit("configChanged", this.getConfig());
       }
@@ -92,9 +79,6 @@ export class ConfigModel {
     return this.state;
   }
 
-  /**
-   * Vérifie si l'état a vraiment changé
-   */
   hasStateChanged(newValues) {
     for (const [key, newValue] of Object.entries(newValues)) {
       if (this.state[key] !== newValue) {
@@ -104,49 +88,34 @@ export class ConfigModel {
     return false;
   }
 
-  /**
-   * Effectue les calculs automatiques nécessaires
-   */
   performAutomaticCalculations() {
-    // Recalcul des modules (inclut maintenant la logique des profilés)
     this.updateModulesStructure();
 
-    // Recalcul hauteur porte si verrouillée
     this.updatePorteHeight();
 
-    // Validation du porteIndex
     this.validatePorteIndex();
   }
 
-  /**
-   * CORRECTION: Recalcule les largeurs des modules libres (non porte) selon la logique des profilés
-   */
   recalculateFreeModulesWidths() {
     const { modulesCount, width, porteIndex, type } = this.state;
 
     if (type === "porte") {
-      // AVEC PORTE : (width - dimensions.largeur - ((modulesCount - 1) * 40)) / (modulesCount - 1)
-
-      // Calculer les dimensions d'ouverture (incluent les profilés 51mm)
       const dimensionsOuverture = PorteCalculator.calculateDimensionsOuverture(
         this.state
       );
       const porteModuleWidth = dimensionsOuverture.largeur - 102;
 
-      // Mettre à jour le module porte
       if (this.state.modules[porteIndex - 1]) {
         this.state.modules[porteIndex - 1].width = porteModuleWidth;
         this.state.modules[porteIndex - 1].type = "porte";
       }
 
-      // CORRECTION: Calculer la largeur des modules libres selon la formule métier corrigée
       const freeModulesCount = modulesCount - 1;
       if (freeModulesCount > 0) {
         const clairVitrage =
           (width - dimensionsOuverture.largeur - (modulesCount - 1) * 40) /
           freeModulesCount;
 
-        // Appliquer cette largeur à tous les modules libres
         for (let i = 0; i < modulesCount; i++) {
           if (i + 1 !== porteIndex && this.state.modules[i]) {
             this.state.modules[i].width = Math.floor(clairVitrage);
@@ -155,10 +124,8 @@ export class ConfigModel {
         }
       }
     } else {
-      // SANS PORTE : (width - (modulesCount+1) * 40) / modulesCount
       const clairVitrage = (width - (modulesCount + 1) * 40) / modulesCount;
 
-      // Appliquer cette largeur à tous les modules
       for (let i = 0; i < modulesCount; i++) {
         if (this.state.modules[i]) {
           this.state.modules[i].width = Math.floor(clairVitrage);
@@ -168,13 +135,9 @@ export class ConfigModel {
     }
   }
 
-  /**
-   * Met à jour la structure des modules
-   */
   updateModulesStructure() {
     const { modulesCount, width, type, porteIndex } = this.state;
 
-    // Ajuste le nombre de modules dans le tableau pour correspondre à modulesCount
     while (this.state.modules.length < modulesCount) {
       this.state.modules.push({ width: 800, type: "fixe" });
     }
@@ -182,7 +145,6 @@ export class ConfigModel {
       this.state.modules.pop();
     }
 
-    // Ajuste le tracking des modifications
     while (this.state.moduleModifiedByUser.length < modulesCount) {
       this.state.moduleModifiedByUser.push(false);
     }
@@ -191,13 +153,11 @@ export class ConfigModel {
     }
 
     if (type === "porte") {
-      // AVEC PORTE : Calculer selon la formule corrigée
       const dimensionsOuverture = PorteCalculator.calculateDimensionsOuverture(
         this.state
       );
       const porteModuleWidth = dimensionsOuverture.largeur - 102;
 
-      // CORRECTION: Largeur des modules libres selon la formule corrigée
       const freeModulesCount = modulesCount - 1;
       const clairVitrage =
         freeModulesCount > 0
@@ -205,7 +165,6 @@ export class ConfigModel {
             freeModulesCount
           : 0;
 
-      // Mettre à jour tous les modules
       for (let i = 0; i < modulesCount; i++) {
         if (!this.state.modules[i]) {
           this.state.modules[i] = { width: 800, type: "fixe" };
@@ -225,7 +184,6 @@ export class ConfigModel {
         }
       }
     } else {
-      // SANS PORTE : (width - (modulesCount+1) * 40) / modulesCount
       const clairVitrage = (width - (modulesCount + 1) * 40) / modulesCount;
 
       for (let i = 0; i < modulesCount; i++) {
@@ -245,7 +203,6 @@ export class ConfigModel {
   handleLastFreeModuleImposition() {
     const { modulesCount, type, porteIndex, width } = this.state;
 
-    // Identifier les modules libres (non porte, non modifiés)
     const freeModules = [];
     const modifiedModules = [];
 
@@ -261,14 +218,11 @@ export class ConfigModel {
       }
     }
 
-    // Si il reste exactement 1 module libre, l'imposer
     if (freeModules.length === 1) {
       const imposedIndex = freeModules[0];
       const imposedWidth = this.calculateImposedModuleWidth(imposedIndex);
       this.state.modules[imposedIndex].width = imposedWidth;
-    }
-    // Si plusieurs modules libres, les recalculer équitablement
-    else if (freeModules.length > 1) {
+    } else if (freeModules.length > 1) {
       this.redistributeFreeModules(freeModules);
     }
   }
@@ -278,7 +232,6 @@ export class ConfigModel {
 
     if (freeModulesIndexes.length === 0) return;
 
-    // Calculer la largeur utilisée par les modules fixés (porte + modifiés)
     let usedWidth = 0;
     for (let i = 0; i < modulesCount; i++) {
       const isPorteModule = type === "porte" && i + 1 === this.state.porteIndex;
@@ -289,7 +242,6 @@ export class ConfigModel {
       }
     }
 
-    // Calculer les profilés
     let profilesWidth;
     if (type === "porte") {
       profilesWidth = (modulesCount - 1) * 40 + 102;
@@ -297,13 +249,11 @@ export class ConfigModel {
       profilesWidth = (modulesCount + 1) * 40;
     }
 
-    // Largeur restante pour les modules libres
     const remainingWidth = width - usedWidth - profilesWidth;
     const widthPerFreeModule = Math.floor(
       remainingWidth / freeModulesIndexes.length
     );
 
-    // Appliquer la largeur calculée aux modules libres
     freeModulesIndexes.forEach((index) => {
       this.state.modules[index].width = Math.max(
         200,
@@ -315,7 +265,6 @@ export class ConfigModel {
   calculateImposedModuleWidth(imposedIndex) {
     const { modulesCount, width, type } = this.state;
 
-    // Calculer la somme des autres modules
     let otherModulesWidth = 0;
     for (let i = 0; i < modulesCount; i++) {
       if (i !== imposedIndex) {
@@ -323,7 +272,6 @@ export class ConfigModel {
       }
     }
 
-    // Calculer les profilés
     let profilesWidth;
     if (type === "porte") {
       profilesWidth = (modulesCount - 1) * 40 + 102;
@@ -331,16 +279,11 @@ export class ConfigModel {
       profilesWidth = (modulesCount + 1) * 40;
     }
 
-    // Largeur imposée = width - autres modules - profilés
     const imposedWidth = width - otherModulesWidth - profilesWidth;
 
-    // Validation stricte dans les bornes
     return Math.max(200, Math.min(2000, Math.round(imposedWidth)));
   }
 
-  /**
-   * Met à jour la hauteur de porte si calculée automatiquement
-   */
   updatePorteHeight() {
     if (this.state.type !== "porte") return;
 
@@ -353,9 +296,6 @@ export class ConfigModel {
     }
   }
 
-  /**
-   * Valide et corrige le porteIndex
-   */
   validatePorteIndex() {
     if (this.state.type === "porte") {
       const maxIndex = this.state.modulesCount;
@@ -368,53 +308,34 @@ export class ConfigModel {
     }
   }
 
-  /**
-   * Validation des données avec corrections automatiques
-   */
   validate() {
-    // Validation et correction des dimensions principales
     this.state.width = this.clamp(this.state.width, 400, 5000);
     this.state.height = this.clamp(this.state.height, 400, 5000);
 
-    // CORRECTION: Ne pas forcer la validation du nombre de modules
-    // Laisser l'utilisateur choisir, la validation se fera dans l'UI si nécessaire
-    // const bounds = ModulesCalculator.calculateModulesBounds(this.state.width);
-    // this.state.modulesCount = this.clamp(this.state.modulesCount, bounds.min, bounds.max);
-
-    // Validation minimale : au moins 1 module, maximum raisonnable
     this.state.modulesCount = this.clamp(this.state.modulesCount, 1, 20);
 
-    // Validation porte si applicable
     if (this.state.type === "porte" && this.state.porte) {
       this.validatePorteConfig();
     }
 
-    // Validation des modules individuels
     this.validateModules();
 
-    // Validation des traverses
     this.validateTraverses();
 
     return this.state;
   }
 
-  /**
-   * Valide la configuration porte
-   */
   validatePorteConfig() {
     const porte = this.state.porte;
 
-    // Largeurs avec bornes
     porte.porteWidth = this.clamp(porte.porteWidth, 400, 1230);
     porte.tierceWidth = this.clamp(porte.tierceWidth, 300, 1230);
 
-    // Hauteur porte
     if (!PorteCalculator.isPorteHeightLocked(this.state)) {
       const maxHeight = PorteCalculator.calculateMaxPorteHeight(this.state);
       porte.porteHeight = this.clamp(porte.porteHeight, 500, maxHeight);
     }
 
-    // Valeurs par défaut pour les énumérations
     if (!["visible", "invisible"].includes(porte.charniereType)) {
       porte.charniereType = "visible";
     }
@@ -426,9 +347,6 @@ export class ConfigModel {
     }
   }
 
-  /**
-   * Valide les largeurs des modules
-   */
   validateModules() {
     this.state.modules.forEach((module) => {
       if (module.type !== "porte") {
@@ -437,11 +355,7 @@ export class ConfigModel {
     });
   }
 
-  /**
-   * Valide les traverses
-   */
   validateTraverses() {
-    // Filtrer les traverses invalides
     this.state.traverses = this.state.traverses.filter((traverse) => {
       return (
         traverse.height >= 240 &&
@@ -459,19 +373,11 @@ export class ConfigModel {
     });
   }
 
-  /**
-   * Utilitaire pour contraindre une valeur dans des bornes
-   */
   clamp(value, min, max) {
     if (typeof value !== "number" || isNaN(value)) return min;
     return Math.max(min, Math.min(max, value));
   }
 
-  // ===== MODULES =====
-
-  /**
-   * Modifie la largeur d'un module spécifique
-   */
   setModuleWidth(index, width) {
     if (index < 0 || index >= this.state.modules.length) {
       throw new Error("Index de module invalide");
@@ -484,7 +390,6 @@ export class ConfigModel {
     const validatedWidth = this.clamp(width, 200, 2000);
     this.state.modules[index].width = validatedWidth;
 
-    // Marquer ce module comme modifié par l'utilisateur
     this.state.moduleModifiedByUser[index] = true;
 
     this.handleLastFreeModuleImposition();
@@ -496,21 +401,16 @@ export class ConfigModel {
     return this.state;
   }
 
-  /**
-   * Remet à zéro les largeurs des modules (répartition équitable)
-   */
   resetModulesWidths() {
     const { modulesCount, width, type, porteIndex } = this.state;
     this.state.moduleModifiedByUser = new Array(modulesCount).fill(false);
 
     if (type === "porte") {
-      // AVEC PORTE : Calculer selon la formule corrigée
       const dimensionsOuverture = PorteCalculator.calculateDimensionsOuverture(
         this.state
       );
       const porteModuleWidth = dimensionsOuverture.largeur - 102;
 
-      // CORRECTION: Largeur des modules libres selon la formule corrigée
       const freeModulesCount = modulesCount - 1;
       const clairVitrage =
         freeModulesCount > 0
@@ -518,7 +418,6 @@ export class ConfigModel {
             freeModulesCount
           : 0;
 
-      // Mettre à jour tous les modules
       for (let i = 0; i < modulesCount; i++) {
         if (!this.state.modules[i]) {
           this.state.modules[i] = { width: 800, type: "fixe" };
@@ -550,13 +449,7 @@ export class ConfigModel {
     return this.getConfig();
   }
 
-  // ===== TRAVERSES =====
-
-  /**
-   * Ajoute une traverse principale
-   */
   addTraverse(height, modules = [1]) {
-    // Validation
     if (height < 240 || height > this.state.height - 240) {
       throw new Error(
         `Hauteur de traverse invalide (${240} - ${this.state.height - 240})`
@@ -567,7 +460,6 @@ export class ConfigModel {
       throw new Error("Au moins un module doit être sélectionné");
     }
 
-    // Vérification des conflits
     const conflict = this.state.traverses.some(
       (t) => t.height === height && t.modules.some((m) => modules.includes(m))
     );
@@ -582,34 +474,25 @@ export class ConfigModel {
     return id;
   }
 
-  /**
-   * Supprime une traverse principale
-   */
   removeTraverse(id) {
     this.state.traverses = this.state.traverses.filter((t) => t.id !== id);
     return this.state;
   }
 
-  /**
-   * Ajoute une traverse de porte
-   */
   addTraversePorte(
     height,
     { type = "28", onPorte = true, onTierce = false } = {}
   ) {
     const maxHeight = (this.state.porte?.porteHeight || 2200) - 240;
 
-    // Validation de base
     if (height < 200 || height > maxHeight) {
       throw new Error(`Hauteur invalide (200 - ${maxHeight}mm)`);
     }
 
-    // Au moins un emplacement doit être sélectionné
     if (!onPorte && !onTierce) {
       throw new Error("Sélectionnez au moins un emplacement (porte ou tierce)");
     }
 
-    // Validation des conflits selon l'emplacement
     if (onPorte) {
       const porteConflict =
         TraversesCalculator.checkTraversePorteSpecificConflict(
@@ -648,9 +531,6 @@ export class ConfigModel {
     return id;
   }
 
-  /**
-   * Supprime une traverse de porte
-   */
   removeTraversePorte(id) {
     this.state.traversesPorte = this.state.traversesPorte.filter(
       (t) => t.id !== id
@@ -658,27 +538,14 @@ export class ConfigModel {
     return this.state;
   }
 
-  // ===== MÉTHODES STATIQUES DE CALCUL =====
-
-  /**
-   * Calcule les dimensions d'ouverture
-   */
   static calculateDimensionsOuverture(config) {
     return PorteCalculator.calculateDimensionsOuverture(config);
   }
 
-  // ===== ACCESSEURS ET UTILITAIRES =====
-
-  /**
-   * Retourne une copie profonde de la configuration
-   */
   getConfig() {
     return JSON.parse(JSON.stringify(this.state));
   }
 
-  /**
-   * Résumé de la configuration pour affichage
-   */
   getSummary() {
     const cfg = this.state;
     return {
@@ -704,11 +571,6 @@ export class ConfigModel {
     };
   }
 
-  // ===== PERSISTANCE =====
-
-  /**
-   * Sauvegarde en localStorage
-   */
   saveToStorage(key = "verriere_config") {
     try {
       localStorage.setItem(key, JSON.stringify(this.state));
@@ -719,9 +581,6 @@ export class ConfigModel {
     }
   }
 
-  /**
-   * Chargement depuis localStorage
-   */
   loadFromStorage(key = "verriere_config") {
     try {
       const item = localStorage.getItem(key);
@@ -738,16 +597,10 @@ export class ConfigModel {
     }
   }
 
-  /**
-   * Export JSON
-   */
   toJSON() {
     return JSON.stringify(this.state, null, 2);
   }
 
-  /**
-   * Import JSON
-   */
   fromJSON(jsonString) {
     try {
       const obj = JSON.parse(jsonString);

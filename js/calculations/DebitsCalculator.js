@@ -1,6 +1,3 @@
-// ===== Mise à jour de js/calculations/DebitsCalculator.js =====
-// ===== Section à ajouter après l'import des modules =====
-
 import { References } from "../data/References.js";
 import { PorteCalculator } from "./PorteCalculator.js";
 import { PC40Calculator } from "./PC40Calculator.js";
@@ -10,37 +7,22 @@ import { AccessoriesCalculator } from "./AccessoriesCalculator.js";
 import { GlassCalculator } from "./GlassCalculator.js";
 
 export class DebitsCalculator {
-  /**
-   * Calcule tous les débits pour une configuration
-   * @param {Object} config - Configuration complète
-   * @returns {{profiles: Array, accessories: Array, glass: Array, totals: Object}}
-   */
   static calculateDebits(config) {
     const profiles = this.calculateProfiles(config);
     const accessories = this.calculateAccessories(config);
     const glass = this.calculateGlass(config);
 
-    // Calcul des totaux
     const totals = this.calculateTotals(profiles, accessories, glass);
 
     return { profiles, accessories, glass, totals };
   }
 
-  /**
-   * Calcule les débits de profilés
-   */
   static calculateProfiles(config) {
     const profiles = [];
 
-    console.log("🔧 Calcul des profils pour config:", config);
-
-    // ===== CALCUL PC40 et PAC40 =====
     try {
       const pc40Report = PC40Calculator.generateReport(config);
 
-      console.log("📊 Rapport PC40:", pc40Report);
-
-      // Ajouter les lignes PC40
       pc40Report.tableLines.PC40.forEach((line) => {
         profiles.push({
           ref: line.ref,
@@ -56,7 +38,6 @@ export class DebitsCalculator {
         });
       });
 
-      // Ajouter les lignes PAC40
       pc40Report.tableLines.PAC40.forEach((line) => {
         profiles.push({
           ref: line.ref,
@@ -71,15 +52,9 @@ export class DebitsCalculator {
           category: line.category,
         });
       });
-
-      // Afficher les avertissements s'il y en a
-      if (pc40Report.validation.warnings.length > 0) {
-        console.warn("⚠️ Avertissements PC40:", pc40Report.validation.warnings);
-      }
     } catch (error) {
-      console.error("❌ Erreur calcul PC40:", error);
+      console.error("Erreur calcul PC40:", error);
 
-      // En cas d'erreur, ajouter des entrées par défaut
       profiles.push({
         ref: "PC40",
         description: "PC40 - Erreur de calcul",
@@ -92,13 +67,9 @@ export class DebitsCalculator {
       });
     }
 
-    // ===== CALCUL PT40 et PAT40 (traverses) =====
     try {
       const traversesReport = PT40Calculator.generateReport(config);
 
-      console.log("📊 Rapport Traverses:", traversesReport);
-
-      // Ajouter les lignes PT40 et PAT40
       traversesReport.tableLines.forEach((line) => {
         profiles.push({
           ref: line.ref,
@@ -114,17 +85,11 @@ export class DebitsCalculator {
         });
       });
 
-      // Afficher les avertissements s'il y en a
       if (traversesReport.validation.warnings.length > 0) {
-        console.warn(
-          "⚠️ Avertissements Traverses:",
-          traversesReport.validation.warnings
-        );
       }
     } catch (error) {
-      console.error("❌ Erreur calcul Traverses:", error);
+      console.error("Erreur calcul Traverses:", error);
 
-      // En cas d'erreur, ajouter des entrées par défaut
       profiles.push({
         ref: "PT40",
         description: "PT40 - Erreur de calcul",
@@ -137,15 +102,11 @@ export class DebitsCalculator {
       });
     }
 
-    // ===== CALCUL PROFILS DE PORTE =====
     if (config.type === "porte") {
       try {
         const porteProfilesReport =
           PorteProfilesCalculator.generateReport(config);
 
-        console.log("📊 Rapport Profils Porte:", porteProfilesReport);
-
-        // Ajouter les lignes des profils de porte
         porteProfilesReport.tableLines.forEach((line) => {
           profiles.push({
             ref: line.ref,
@@ -160,18 +121,8 @@ export class DebitsCalculator {
             category: line.category,
           });
         });
-
-        // Afficher les avertissements s'il y en a
-        if (porteProfilesReport.validation.warnings.length > 0) {
-          console.warn(
-            "⚠️ Avertissements Profils Porte:",
-            porteProfilesReport.validation.warnings
-          );
-        }
       } catch (error) {
-        console.error("❌ Erreur calcul Profils Porte:", error);
-
-        // En cas d'erreur, ajouter des entrées par défaut
+        console.error("Erreur calcul Profils Porte:", error);
         profiles.push({
           ref: "PTPV51",
           description: "PTPV51 - Erreur de calcul",
@@ -188,87 +139,50 @@ export class DebitsCalculator {
     return profiles;
   }
 
-  /**
-   * Calcule les accessoires (temporairement vide)
-   */
   static calculateAccessories(config) {
-    console.log("🔧 Calcul des accessoires");
-    console.log("Config complète reçue:", config);
-    console.log("Options config:", config.options);
-
     try {
       const accessoriesReport = AccessoriesCalculator.generateReport(config);
 
-      console.log("📊 Rapport Accessoires:", accessoriesReport);
-
-      // Convertir pour le format attendu par les tableaux
       const accessories = accessoriesReport.tableLines.map((line) => ({
         ref: line.ref,
         description: line.description,
         quantity: line.quantity,
-        length: line.length, // CORRECTION: Garder le formatage fait par AccessoriesCalculator
-        finition: line.finition || "-", // CORRECTION: Utiliser la finition calculée
+        length: line.length,
+        finition: line.finition || "-",
         unitPrice: line.unitPrice,
         totalPrice: line.totalPrice,
         category: line.category,
       }));
 
-      // Afficher les avertissements s'il y en a
-      if (accessoriesReport.validation.warnings.length > 0) {
-        console.warn(
-          "⚠️ Avertissements Accessoires:",
-          accessoriesReport.validation.warnings
-        );
-      }
-
       return accessories;
     } catch (error) {
-      console.error("❌ Erreur calcul Accessoires:", error);
+      console.error("Erreur calcul Accessoires:", error);
       return [];
     }
   }
 
-  /**
-   * Calcule le remplissage vitrage (temporairement vide)
-   */
   static calculateGlass(config) {
-    console.log("🔧 Calcul du remplissage vitrage");
-
     try {
       const glassReport = GlassCalculator.generateReport(config);
 
-      console.log("📊 Rapport Remplissage:", glassReport);
-
-      // Convertir pour le format attendu par les tableaux (sans ref, avec quantity)
       const glass = glassReport.tableLines.map((line) => ({
         description: line.description,
         epaisseur: line.epaisseur,
         dimensions: line.dimensions,
         surface: line.surface,
-        quantity: line.quantity, // Nouvelle colonne quantité
+        quantity: line.quantity,
         unitPrice: line.unitPrice,
         totalPrice: line.totalPrice,
         category: line.category,
       }));
 
-      // Afficher les avertissements s'il y en a
-      if (glassReport.validation.warnings.length > 0) {
-        console.warn(
-          "⚠️ Avertissements Remplissage:",
-          glassReport.validation.warnings
-        );
-      }
-
       return glass;
     } catch (error) {
-      console.error("❌ Erreur calcul Remplissage:", error);
+      console.error("Erreur calcul Remplissage:", error);
       return [];
     }
   }
 
-  /**
-   * Calcule les totaux généraux
-   */
   static calculateTotals(profiles, accessories, glass) {
     const profilesTotal = profiles.reduce(
       (sum, item) => sum + (item.totalPrice || 0),
@@ -294,19 +208,14 @@ export class DebitsCalculator {
     };
   }
 
-  /**
-   * Validation des débits calculés
-   */
   static validateDebits(debits, config) {
     const errors = [];
     const warnings = [];
 
-    // Vérification profilés
     if (!debits.profiles || debits.profiles.length === 0) {
       errors.push("Aucun profilé calculé");
     }
 
-    // Vérification cohérence PC40/PAC40
     const pc40Items = debits.profiles.filter((p) => p.ref === "PC40");
     const pac40Items = debits.profiles.filter((p) => p.ref === "PAC40");
 
@@ -314,19 +223,16 @@ export class DebitsCalculator {
       warnings.push("Incohérence entre PC40 et PAC40");
     }
 
-    // Vérification longueurs négatives
     const negativeLength = debits.profiles.find((p) => p.length < 0);
     if (negativeLength) {
       errors.push(`Longueur négative détectée: ${negativeLength.ref}`);
     }
 
-    // Vérification spécifique aux profils de porte
     if (config.type === "porte") {
       const ptciv51Items = debits.profiles.filter((p) => p.ref === "PTCIV51");
       const ptpv51Items = debits.profiles.filter((p) => p.ref === "PTPV51");
       const patp65Items = debits.profiles.filter((p) => p.ref === "PATP65");
 
-      // Vérifier que si on a des profils PTCIV51 ou PTPV51, on a aussi des PATP65
       if (
         (ptciv51Items.length > 0 || ptpv51Items.length > 0) &&
         patp65Items.length === 0
@@ -342,9 +248,6 @@ export class DebitsCalculator {
     };
   }
 
-  /**
-   * Génère un résumé des débits
-   */
   static generateSummary(debits) {
     const { profiles, accessories, glass, totals } = debits;
 
@@ -378,13 +281,10 @@ export class DebitsCalculator {
     };
   }
 
-  /**
-   * Convertit les débits pour export
-   */
   static formatForExport(debits, config) {
     return {
       configuration: {
-        dimensions: `${config.width}×${config.height}mm`,
+        dimensions: `${config.width}x${config.height}mm`,
         type: config.type,
         modules: config.modulesCount,
         date: new Date().toISOString().split("T")[0],
@@ -426,9 +326,6 @@ export class DebitsCalculator {
     };
   }
 
-  /**
-   * Retourne la description de finition selon la couleur
-   */
   static getFinishDescription(colorProfile) {
     const colorMap = {
       noir: "Laqué noir RAL 9005 granité",

@@ -1,40 +1,23 @@
-// ===== js/calculations/PorteProfilesCalculator.js =====
 export class PorteProfilesCalculator {
-  /**
-   * Calcule tous les profils spécifiques à la porte
-   * @param {Object} config - Configuration complète
-   * @returns {Array} Liste des profils avec longueurs et quantités
-   */
-
   static calculateFinitionProfiles(config, allPorteProfiles) {
     const profiles = [];
 
-    console.log("🔧 Calcul profils de finition PF23 et PF33");
-
-    // ===== CALCUL PF23 =====
-    // Somme des longueurs PTPV51 + PO40 + PO66 + PO6622U
     let totalLengthPF23 = 0;
 
     allPorteProfiles.forEach((profile) => {
       if (["PTPV51", "PO40", "PO66", "PO6622U"].includes(profile.ref)) {
         const totalLength = profile.longueur * profile.quantite;
         totalLengthPF23 += totalLength;
-        console.log(
-          `📏 ${profile.ref}: ${profile.longueur}mm × ${profile.quantite} = ${totalLength}mm`
-        );
       }
     });
 
     if (totalLengthPF23 > 0) {
       const quantitePF23 = Math.ceil(totalLengthPF23 / 5000);
-      console.log(
-        `🔧 PF23: ${totalLengthPF23}mm total ÷ 5000 = ${quantitePF23} barre(s) de 5140mm`
-      );
 
       profiles.push({
         ref: "PF23",
         description: "Profil de finition 23",
-        longueur: 5140, // Longueur imposée
+        longueur: 5140,
         quantite: quantitePF23,
         category: "finition",
         type: "porte",
@@ -45,30 +28,22 @@ export class PorteProfilesCalculator {
       });
     }
 
-    // ===== CALCUL PF33 =====
-    // Somme des longueurs PTCI51 + POCI53
     let totalLengthPF33 = 0;
 
     allPorteProfiles.forEach((profile) => {
       if (["PTCI51", "POCI53"].includes(profile.ref)) {
         const totalLength = profile.longueur * profile.quantite;
         totalLengthPF33 += totalLength;
-        console.log(
-          `📏 ${profile.ref}: ${profile.longueur}mm × ${profile.quantite} = ${totalLength}mm`
-        );
       }
     });
 
     if (totalLengthPF33 > 0) {
       const quantitePF33 = Math.ceil(totalLengthPF33 / 5000);
-      console.log(
-        `🔧 PF33: ${totalLengthPF33}mm total ÷ 5000 = ${quantitePF33} barre(s) de 5140mm`
-      );
 
       profiles.push({
         ref: "PF33",
         description: "Profil de finition 33",
-        longueur: 5140, // Longueur imposée
+        longueur: 5140,
         quantite: quantitePF33,
         category: "finition",
         type: "porte",
@@ -78,51 +53,37 @@ export class PorteProfilesCalculator {
         },
       });
     }
-
-    console.log(
-      `✅ Profils de finition calculés: ${profiles.length} référence(s)`
-    );
     return profiles;
   }
 
   static calculatePorteProfiles(config) {
     const profiles = [];
 
-    // Vérifier qu'on a bien une porte
     if (config.type !== "porte") {
       return profiles;
     }
 
-    console.log("🚪 Calcul des profils de porte");
-
-    // 1. PROFILS PTCIV51 (Charnières invisibles)
     const ptciv51Profiles = this.calculatePTCIV51(config);
     profiles.push(...ptciv51Profiles);
 
-    // 2. PROFILS PTPV51 (Charnières visibles + imposte)
     const ptpv51Profiles = this.calculatePTPV51(config);
     profiles.push(...ptpv51Profiles);
 
-    // 3. PROFILS IMPOSTE PIP14 et PAIP65 (si imposte)
     const imposteProfiles = this.calculateImposteProfiles(config);
     profiles.push(...imposteProfiles);
 
-    // 4. PROFILS DE LA PORTE (POCI53, PO40, PO66)
     const porteOuvranteProfiles = this.calculatePorteOuvranteProfiles(config);
     profiles.push(...porteOuvranteProfiles);
 
-    // 5. TRAVERSES HAUTE ET BASSE DE LA PORTE (THB40)
     const thb40Profiles = this.calculateTHB40Profiles(config);
     profiles.push(...thb40Profiles);
 
-    // 6. TRAVERSES INTERMÉDIAIRES TI28 et TI37
     const traversesIntermediaires = this.calculateTraversesIntermediaires(
       config,
       thb40Profiles
     );
     profiles.push(...traversesIntermediaires);
 
-    // 7. PARCLOSES PATP65 (Reprennent les mêmes longueurs, ajustées si imposte)
     const patp65Profiles = this.calculatePATP65(
       config,
       ptciv51Profiles,
@@ -136,31 +97,19 @@ export class PorteProfilesCalculator {
     return profiles;
   }
 
-  /**
-   * Calcule les profils PTCIV51 (charnières invisibles)
-   */
   static calculatePTCIV51(config) {
     const profiles = [];
     const { height, porte } = config;
 
-    // Conditions pour PTCIV51
     const isInvisible = porte?.charniereType === "invisible";
     const withTierce =
       porte?.withTierce === true || porte?.withTierce === "true";
 
     if (!isInvisible) {
-      console.log("🔍 PTCIV51: Charnières visibles, aucun profil PTCIV51");
       return profiles;
     }
 
-    // Quantité selon la tierce
     const quantite = withTierce ? 2 : 1;
-
-    console.log(
-      `🔧 PTCIV51: Charnières invisibles, ${
-        withTierce ? "avec" : "sans"
-      } tierce → ${quantite} profil(s)`
-    );
 
     profiles.push({
       ref: "PTCIV51",
@@ -174,9 +123,6 @@ export class PorteProfilesCalculator {
     return profiles;
   }
 
-  /**
-   * Calcule les profils PTPV51 (charnières visibles + imposte)
-   */
   static calculatePTPV51(config) {
     const profiles = [];
     const { height, porte, modules, porteIndex } = config;
@@ -188,19 +134,8 @@ export class PorteProfilesCalculator {
     const withImposte =
       porte?.withImposte === true || porte?.withImposte === "true";
 
-    console.log("🔍 PTPV51 - Conditions:", {
-      isVisible,
-      isInvisible,
-      withTierce,
-      withImposte,
-    });
-
-    // CAS 1: Charnières visibles
     if (isVisible) {
-      const quantite = 2; // Toujours 2 pour charnières visibles
-      console.log(
-        `🔧 PTPV51: Charnières visibles → ${quantite} profils de ${height}mm`
-      );
+      const quantite = 2;
 
       profiles.push({
         ref: "PTPV51",
@@ -212,12 +147,8 @@ export class PorteProfilesCalculator {
       });
     }
 
-    // CAS 2: Charnières invisibles SANS tierce
     if (isInvisible && !withTierce) {
       const quantite = 1;
-      console.log(
-        `🔧 PTPV51: Charnières invisibles sans tierce → ${quantite} profil de ${height}mm`
-      );
 
       profiles.push({
         ref: "PTPV51",
@@ -229,17 +160,12 @@ export class PorteProfilesCalculator {
       });
     }
 
-    // CAS 3: Imposte (indépendant des charnières)
     if (withImposte) {
-      // Récupérer la largeur du module porte
-      const modulePorteIndex = porteIndex - 1; // porteIndex est 1-based
+      const modulePorteIndex = porteIndex - 1;
       const modulePorte = modules?.[modulePorteIndex];
 
       if (modulePorte && modulePorte.width) {
         const longueurImposte = modulePorte.width;
-        console.log(
-          `🔧 PTPV51: Imposte → 1 profil de ${longueurImposte}mm (largeur module ${porteIndex})`
-        );
 
         profiles.push({
           ref: "PTPV51",
@@ -249,19 +175,12 @@ export class PorteProfilesCalculator {
           category: "structure",
           type: "dormant",
         });
-      } else {
-        console.warn(
-          `⚠️ Module porte (index ${modulePorteIndex}) non trouvé pour imposte`
-        );
       }
     }
 
     return profiles;
   }
 
-  /**
-   * Calcule les profils d'imposte PIP14 et PAIP65
-   */
   static calculateImposteProfiles(config) {
     const profiles = [];
     const withImposte =
@@ -269,21 +188,11 @@ export class PorteProfilesCalculator {
       config.porte?.withImposte === "true";
 
     if (!withImposte) {
-      console.log("🔍 Pas d'imposte, aucun profil PIP14/PAIP65");
       return profiles;
     }
-
-    console.log("🔧 Calcul profils imposte PIP14 et PAIP65");
-
-    // Calculer les dimensions d'ouverture
     const dimensionsOuverture = this.calculateDimensionsOuverture(config);
     const longueurImposte = config.height - dimensionsOuverture.hauteur;
 
-    console.log(
-      `📐 Longueur imposte: ${config.height} - ${dimensionsOuverture.hauteur} = ${longueurImposte}mm`
-    );
-
-    // Profil imposte PIP14
     profiles.push({
       ref: "PIP14",
       description: "Profil imposte",
@@ -293,7 +202,6 @@ export class PorteProfilesCalculator {
       type: "imposte",
     });
 
-    // Parclose imposte PAIP65
     profiles.push({
       ref: "PAIP65",
       description: "Parclose imposte",
@@ -303,37 +211,25 @@ export class PorteProfilesCalculator {
       type: "imposte",
     });
 
-    console.log(`🔧 PIP14: 2 profils de ${longueurImposte}mm`);
-    console.log(`🔧 PAIP65: 2 parcloses de ${longueurImposte}mm`);
-
     return profiles;
   }
 
-  /**
-   * Calcule les dimensions d'ouverture (copie de PorteCalculator pour éviter dépendance circulaire)
-   */
   static calculateDimensionsOuverture(config) {
     if (config.type !== "porte") {
       return { hauteur: 0, largeur: 0, hasOuverture: false };
     }
 
     const { porte, height } = config;
-
-    // Calcul hauteur d'ouverture
     const hauteur = porte?.withImposte
       ? (porte?.porteHeight || 0) + 15 + 51
       : height || 0;
 
-    // Calcul largeur d'ouverture
     const porteWidth = porte?.porteWidth || 0;
     const charniereOffset = porte?.charniereType === "invisible" ? 6 : 10;
     const withTierce =
       porte?.withTierce === true || porte?.withTierce === "true";
 
-    // Largeur de base : porte + profilés + charnière
     let largeur = porteWidth + 102 + charniereOffset;
-
-    // Ajouter tierce si nécessaire
     if (withTierce) {
       largeur += (porte?.tierceWidth || 0) + 5;
     }
@@ -345,19 +241,13 @@ export class PorteProfilesCalculator {
     };
   }
 
-  /**
-   * Calcule les profils de la porte ouvrante (POCI53, PO40, PO66)
-   */
   static calculatePorteOuvranteProfiles(config) {
     const profiles = [];
     const { porte } = config;
 
     if (!porte) {
-      console.log("🔍 Pas de configuration porte");
       return profiles;
     }
-
-    console.log("🚪 Calcul profils porte ouvrante");
 
     const isVisible = porte.charniereType === "visible";
     const isInvisible = porte.charniereType === "invisible";
@@ -366,16 +256,6 @@ export class PorteProfilesCalculator {
     const longueurPorte = (porte.porteHeight || 0) - 5;
     const profileType = porte.profile || "po66";
 
-    console.log("🔍 Conditions porte:", {
-      isVisible,
-      isInvisible,
-      withTierce,
-      isSerpen35m,
-      profileType,
-      longueurPorte,
-    });
-
-    // CALCUL POCI53
     let quantitePOCI53 = 0;
     if (isInvisible) {
       quantitePOCI53 = withTierce ? 2 : 1;
@@ -390,23 +270,17 @@ export class PorteProfilesCalculator {
         category: "structure",
         type: "porte",
       });
-      console.log(
-        `🔧 POCI53: ${quantitePOCI53} profil(s) de ${longueurPorte}mm`
-      );
     }
 
-    // CALCUL PO40
     let quantitePO40 = 0;
 
     if (!withTierce) {
-      // Sans tierce
       if (isVisible) {
         quantitePO40 = isSerpen35m ? 1 : 2;
       } else if (isInvisible) {
         quantitePO40 = isSerpen35m ? 0 : 1;
       }
     } else {
-      // Avec tierce
       if (isVisible) {
         quantitePO40 = isSerpen35m ? 3 : 4;
       } else if (isInvisible) {
@@ -423,14 +297,11 @@ export class PorteProfilesCalculator {
         category: "structure",
         type: "porte",
       });
-      console.log(`🔧 PO40: ${quantitePO40} profil(s) de ${longueurPorte}mm`);
     }
 
-    // CALCUL PO66
     const quantitePO66 = isSerpen35m ? 1 : 0;
 
     if (quantitePO66 > 0) {
-      // Choisir la référence selon la configuration
       const profileRef = profileType === "po6622u" ? "PO6622U" : "PO66";
       const profileDescription =
         profileType === "po6622u"
@@ -445,39 +316,17 @@ export class PorteProfilesCalculator {
         category: "structure",
         type: "porte",
       });
-      console.log(
-        `🔧 ${profileRef}: ${quantitePO66} profil(s) de ${longueurPorte}mm`
-      );
     }
-
-    // Vérification totaux
-    const totalProfiles = quantitePOCI53 + quantitePO40 + quantitePO66;
-    const expectedTotal = withTierce ? 4 : 2;
-
-    if (totalProfiles !== expectedTotal) {
-      console.warn(
-        `⚠️ Total profils porte: ${totalProfiles}, attendu: ${expectedTotal}`
-      );
-    } else {
-      console.log(`✅ Total profils porte: ${totalProfiles} (conforme)`);
-    }
-
     return profiles;
   }
 
-  /**
-   * Calcule les traverses haute et basse THB40
-   */
   static calculateTHB40Profiles(config) {
     const profiles = [];
     const { porte } = config;
 
     if (!porte) {
-      console.log("🔍 Pas de configuration porte pour THB40");
       return profiles;
     }
-
-    console.log("🔧 Calcul traverses THB40");
 
     const isVisible = porte.charniereType === "visible";
     const isInvisible = porte.charniereType === "invisible";
@@ -486,62 +335,40 @@ export class PorteProfilesCalculator {
     const porteWidth = porte.porteWidth || 0;
     const tierceWidth = porte.tierceWidth || 0;
 
-    // Collecter les longueurs avec leurs quantités
     const longueurMap = new Map();
 
-    // TRAVERSES DE LA PARTIE PORTE
     let largeurPorteInterne;
 
     if (isVisible) {
-      // Charnières visibles : toujours PO40 à gauche
       if (isSerpen35m) {
-        // PO40 (40) + PO66 (66)
         largeurPorteInterne = porteWidth - 40 - 66;
       } else {
-        // PO40 (40) + PO40 (40)
         largeurPorteInterne = porteWidth - 40 - 40;
       }
     } else if (isInvisible) {
-      // Charnières invisibles : toujours POCI53 à gauche
       if (isSerpen35m) {
-        // POCI53 (53) + PO66 (66)
         largeurPorteInterne = porteWidth - 53 - 66;
       } else {
-        // POCI53 (53) + PO40 (40)
         largeurPorteInterne = porteWidth - 53 - 40;
       }
     }
 
-    console.log(
-      `🔧 THB40 porte: largeur interne = ${porteWidth} - profils = ${largeurPorteInterne}mm`
-    );
-
-    // Ajouter 2 traverses pour la partie porte
     const currentQty = longueurMap.get(largeurPorteInterne) || 0;
     longueurMap.set(largeurPorteInterne, currentQty + 2);
 
-    // TRAVERSES DE LA PARTIE TIERCE (si applicable)
     if (withTierce) {
       let largeurTierceInterne;
 
       if (isVisible) {
-        // Charnières visibles : profils PO40 des deux côtés pour la tierce
         largeurTierceInterne = tierceWidth - 40 - 40;
       } else if (isInvisible) {
-        // Charnières invisibles : profils POCI53 côté charnière, PO40 côté opposé
         largeurTierceInterne = tierceWidth - 53 - 40;
       }
 
-      console.log(
-        `🔧 THB40 tierce: largeur interne = ${tierceWidth} - profils = ${largeurTierceInterne}mm`
-      );
-
-      // Ajouter 2 traverses pour la partie tierce
       const currentTierceQty = longueurMap.get(largeurTierceInterne) || 0;
       longueurMap.set(largeurTierceInterne, currentTierceQty + 2);
     }
 
-    // CRÉER LES PROFILS GROUPÉS PAR LONGUEUR
     longueurMap.forEach((quantite, longueur) => {
       if (longueur > 0 && quantite > 0) {
         profiles.push({
@@ -552,11 +379,9 @@ export class PorteProfilesCalculator {
           category: "traverse",
           type: "porte",
         });
-        console.log(`🔧 THB40: ${quantite} traverse(s) de ${longueur}mm`);
       }
     });
 
-    // Vérification totaux
     const totalTHB40 = Array.from(longueurMap.values()).reduce(
       (sum, qty) => sum + qty,
       0
@@ -567,33 +392,22 @@ export class PorteProfilesCalculator {
       console.warn(
         `⚠️ Total traverses THB40: ${totalTHB40}, attendu: ${expectedTHB40}`
       );
-    } else {
-      console.log(`✅ Total traverses THB40: ${totalTHB40} (conforme)`);
     }
 
     return profiles;
   }
 
-  /**
-   * Calcule les traverses intermédiaires TI28 et TI37
-   */
   static calculateTraversesIntermediaires(config, thb40Profiles) {
     const profiles = [];
     const { traversesPorte } = config;
 
     if (!traversesPorte || traversesPorte.length === 0) {
-      console.log("🔍 Aucune traverse intermédiaire configurée");
       return profiles;
     }
 
-    console.log("🔧 Calcul traverses intermédiaires TI28/TI37");
-
-    // Déterminer les longueurs porte et tierce depuis THB40
     let longueurPorteTHB40 = 0;
     let longueurTierceTHB40 = 0;
 
-    // Pour déterminer quelle longueur correspond à la porte vs tierce,
-    // on utilise la logique inverse de calculateTHB40Profiles
     const { porte } = config;
     const isVisible = porte.charniereType === "visible";
     const isSerpen35m = porte.serrure === "SERPEN35M";
@@ -601,7 +415,6 @@ export class PorteProfilesCalculator {
     const tierceWidth = porte.tierceWidth || 0;
     const withTierce = porte.withTierce === true || porte.withTierce === "true";
 
-    // Calculer la longueur attendue pour la porte
     if (isVisible) {
       longueurPorteTHB40 = isSerpen35m
         ? porteWidth - 40 - 66
@@ -612,7 +425,6 @@ export class PorteProfilesCalculator {
         : porteWidth - 53 - 40;
     }
 
-    // Calculer la longueur attendue pour la tierce (si applicable)
     if (withTierce) {
       if (isVisible) {
         longueurTierceTHB40 = tierceWidth - 40 - 40;
@@ -621,18 +433,12 @@ export class PorteProfilesCalculator {
       }
     }
 
-    console.log(
-      `📐 Longueurs THB40 calculées - Porte: ${longueurPorteTHB40}mm, Tierce: ${longueurTierceTHB40}mm`
-    );
-
-    // Grouper les traverses par référence et longueur
     const traversesMap = new Map();
 
     traversesPorte.forEach((traverse) => {
       const { type, onPorte, onTierce } = traverse;
       const ref = type === "28" ? "TI28" : "TI37";
 
-      // Déterminer la longueur selon l'emplacement
       let longueur = 0;
       if (onPorte) {
         longueur = longueurPorteTHB40 - 2;
@@ -645,16 +451,9 @@ export class PorteProfilesCalculator {
         const current = traversesMap.get(key) || { ref, longueur, quantite: 0 };
         current.quantite += 1;
         traversesMap.set(key, current);
-
-        console.log(
-          `🔧 ${ref}: +1 traverse de ${longueur}mm (${
-            onPorte ? "porte" : "tierce"
-          })`
-        );
       }
     });
 
-    // Créer les profils
     traversesMap.forEach((traverse) => {
       profiles.push({
         ref: traverse.ref,
@@ -667,52 +466,34 @@ export class PorteProfilesCalculator {
         category: "traverse",
         type: "porte",
       });
-      console.log(
-        `🔧 ${traverse.ref}: ${traverse.quantite} traverse(s) de ${traverse.longueur}mm`
-      );
     });
 
     return profiles;
   }
 
-  /**
-   * Calcule les parcloses PATP65 (reprennent les longueurs des PTCIV51 + PTPV51)
-   */
   static calculatePATP65(config, ptciv51Profiles, ptpv51Profiles) {
     const profiles = [];
     const withImposte =
       config.porte?.withImposte === true ||
       config.porte?.withImposte === "true";
 
-    console.log("🔧 PATP65: Génération des parcloses");
-
-    // Collecter toutes les longueurs des profils PTCIV51 et PTPV51
     const allProfiles = [...ptciv51Profiles, ...ptpv51Profiles];
 
-    // Grouper par longueur pour additionner les quantités
     const longueurMap = new Map();
 
     allProfiles.forEach((profile) => {
       let longueur = profile.longueur;
 
-      // CAS SPÉCIAL IMPOSTE : Ajuster les longueurs qui correspondent à la hauteur totale
       if (withImposte && longueur === config.height) {
-        // Calculer les dimensions d'ouverture pour obtenir la hauteur de l'ouverture
         const dimensionsOuverture = this.calculateDimensionsOuverture(config);
         longueur = dimensionsOuverture.hauteur;
-        console.log(
-          `🔧 PATP65 avec imposte: Longueur ajustée de ${config.height}mm à ${longueur}mm`
-        );
       }
 
       const quantiteActuelle = longueurMap.get(longueur) || 0;
       longueurMap.set(longueur, quantiteActuelle + profile.quantite);
     });
 
-    // Créer les profils PATP65
     longueurMap.forEach((quantite, longueur) => {
-      console.log(`🔧 PATP65: ${quantite} parclose(s) de ${longueur}mm`);
-
       profiles.push({
         ref: "PATP65",
         description: "Parclose traverse porte",
@@ -726,17 +507,14 @@ export class PorteProfilesCalculator {
     return profiles;
   }
 
-  /**
-   * Formate les profils pour les tableaux
-   */
   static formatForTable(profiles) {
     return profiles.map((profile) => ({
       ref: profile.ref,
       description: profile.description,
       length: profile.longueur,
       quantity: profile.quantite,
-      unitPrice: 0, // Prix à définir plus tard
-      totalPrice: 0, // Prix à définir plus tard
+      unitPrice: 0,
+      totalPrice: 0,
       category: profile.category,
       details: {
         type: profile.type,
@@ -745,25 +523,19 @@ export class PorteProfilesCalculator {
     }));
   }
 
-  /**
-   * Valide la cohérence des profils calculés
-   */
   static validateProfiles(profiles, config) {
     const warnings = [];
 
-    // Vérifier les longueurs négatives
     const negativeLength = profiles.find((p) => p.longueur <= 0);
     if (negativeLength) {
       warnings.push(`Longueur négative ou nulle: ${negativeLength.ref}`);
     }
 
-    // Vérifier les quantités
     const zeroQuantity = profiles.find((p) => p.quantite <= 0);
     if (zeroQuantity) {
       warnings.push(`Quantité nulle: ${zeroQuantity.ref}`);
     }
 
-    // Vérifier cohérence PTCIV51/PTPV51 vs PATP65 (ajusté pour imposte)
     const ptciv51Total = profiles
       .filter((p) => p.ref === "PTCIV51")
       .reduce((sum, p) => sum + p.quantite, 0);
@@ -784,7 +556,6 @@ export class PorteProfilesCalculator {
       );
     }
 
-    // Vérification spécifique profils porte
     const poci53Count = profiles
       .filter((p) => p.ref === "POCI53")
       .reduce((sum, p) => sum + p.quantite, 0);
@@ -806,7 +577,6 @@ export class PorteProfilesCalculator {
       );
     }
 
-    // Vérification spécifique traverses THB40
     const thb40Count = profiles
       .filter((p) => p.ref === "THB40")
       .reduce((sum, p) => sum + p.quantite, 0);
@@ -818,7 +588,6 @@ export class PorteProfilesCalculator {
       );
     }
 
-    // Vérification spécifique traverses intermédiaires
     const ti28Count = profiles
       .filter((p) => p.ref === "TI28")
       .reduce((sum, p) => sum + p.quantite, 0);
@@ -834,7 +603,6 @@ export class PorteProfilesCalculator {
       );
     }
 
-    // Vérification spécifique imposte
     const withImposte =
       config.porte?.withImposte === true ||
       config.porte?.withImposte === "true";
@@ -861,15 +629,11 @@ export class PorteProfilesCalculator {
     };
   }
 
-  /**
-   * Génère un rapport complet des profils de porte
-   */
   static generateReport(config) {
     const profiles = this.calculatePorteProfiles(config);
     const validation = this.validateProfiles(profiles, config);
     const tableLines = this.formatForTable(profiles);
 
-    // Calcul des totaux par type
     const totals = {};
     profiles.forEach((profile) => {
       if (!totals[profile.ref]) {

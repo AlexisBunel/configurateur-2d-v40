@@ -1,42 +1,27 @@
 export class ValidationRules {
-  /**
-   * Règles de validation pour les dimensions principales
-   */
   static dimensions = {
     width: { min: 400, max: 5000, step: 1 },
     height: { min: 400, max: 5000, step: 1 },
   };
 
-  /**
-   * Règles de validation pour la porte
-   */
   static porte = {
     porteWidth: { min: 400, max: 1230, step: 1 },
     tierceWidth: { min: 300, max: 1230, step: 1 },
     porteHeight: { min: 500, max: 4000, step: 1 },
   };
 
-  /**
-   * Règles de validation pour les modules
-   */
   static modules = {
     width: { min: 200, max: 2000, step: 1 },
     maxCount: 20,
-    minWidth: 300, // largeur min pour calculer max modules
-    maxWidth: 1500, // largeur max pour calculer min modules
+    minWidth: 300,
+    maxWidth: 1500,
   };
 
-  /**
-   * Règles de validation pour les traverses
-   */
   static traverses = {
     main: { minFromBottom: 240, minFromTop: 240 },
     porte: { minFromBottom: 200, minFromTop: 240 },
   };
 
-  /**
-   * Valeurs autorisées pour les énumérations
-   */
   static enums = {
     charniereType: ["visible", "invisible"],
     sensOuverture: ["droit", "gauche"],
@@ -49,12 +34,6 @@ export class ValidationRules {
     traverseType: ["28", "37"],
   };
 
-  /**
-   * Valide une valeur selon une règle
-   * @param {*} value - Valeur à valider
-   * @param {Object} rule - Règle de validation
-   * @returns {{valid: boolean, corrected: *, message?: string}}
-   */
   static validateValue(value, rule) {
     if (typeof value !== "number" || isNaN(value)) {
       return {
@@ -83,13 +62,6 @@ export class ValidationRules {
     return { valid: true, corrected: value };
   }
 
-  /**
-   * Valide une valeur d'énumération
-   * @param {*} value - Valeur à valider
-   * @param {Array} allowedValues - Valeurs autorisées
-   * @param {*} defaultValue - Valeur par défaut
-   * @returns {{valid: boolean, corrected: *, message?: string}}
-   */
   static validateEnum(value, allowedValues, defaultValue = null) {
     if (allowedValues.includes(value)) {
       return { valid: true, corrected: value };
@@ -103,15 +75,9 @@ export class ValidationRules {
     };
   }
 
-  /**
-   * Valide une configuration complète
-   * @param {Object} config - Configuration à valider
-   * @returns {{valid: boolean, errors: Array}}
-   */
   static validateConfig(config) {
     const errors = [];
 
-    // Validation dimensions principales
     const widthValidation = this.validateValue(
       config.width,
       this.dimensions.width
@@ -128,7 +94,6 @@ export class ValidationRules {
       errors.push({ field: "height", message: heightValidation.message });
     }
 
-    // Validation type
     const typeValidation = this.validateEnum(
       config.type,
       ["pleine", "porte"],
@@ -138,13 +103,11 @@ export class ValidationRules {
       errors.push({ field: "type", message: typeValidation.message });
     }
 
-    // Validation porte si applicable
     if (config.type === "porte" && config.porte) {
       const porteErrors = this.validatePorteConfig(config.porte);
       errors.push(...porteErrors);
     }
 
-    // Validation modules
     if (
       !config.modulesCount ||
       config.modulesCount < 1 ||
@@ -159,15 +122,9 @@ export class ValidationRules {
     return { valid: errors.length === 0, errors };
   }
 
-  /**
-   * Valide spécifiquement la configuration porte
-   * @param {Object} porte - Configuration porte
-   * @returns {Array} Erreurs trouvées
-   */
   static validatePorteConfig(porte) {
     const errors = [];
 
-    // Largeur porte
     const porteWidthValidation = this.validateValue(
       porte.porteWidth,
       this.porte.porteWidth
@@ -179,7 +136,6 @@ export class ValidationRules {
       });
     }
 
-    // Largeur tierce si applicable
     if (porte.withTierce) {
       const tierceWidthValidation = this.validateValue(
         porte.tierceWidth,
@@ -193,7 +149,6 @@ export class ValidationRules {
       }
     }
 
-    // Hauteur porte
     const porteHeightValidation = this.validateValue(
       porte.porteHeight,
       this.porte.porteHeight
@@ -205,7 +160,6 @@ export class ValidationRules {
       });
     }
 
-    // Énumérations
     const charniereValidation = this.validateEnum(
       porte.charniereType,
       this.enums.charniereType,
@@ -233,24 +187,11 @@ export class ValidationRules {
     return errors;
   }
 
-  /**
-   * Utilitaire pour contraindre une valeur dans des bornes
-   * @param {number} value - Valeur à contraindre
-   * @param {number} min - Valeur minimum
-   * @param {number} max - Valeur maximum
-   * @returns {number} Valeur contrainte
-   */
   static clamp(value, min, max) {
     if (typeof value !== "number" || isNaN(value)) return min;
     return Math.max(min, Math.min(max, value));
   }
 
-  /**
-   * Valide et corrige une valeur booléenne
-   * @param {*} value - Valeur à valider
-   * @param {boolean} defaultValue - Valeur par défaut
-   * @returns {boolean}
-   */
   static validateBoolean(value, defaultValue = false) {
     if (typeof value === "boolean") return value;
     if (value === "true") return true;
@@ -258,9 +199,6 @@ export class ValidationRules {
     return defaultValue;
   }
 
-  /**
-   * Messages d'aide pour les champs
-   */
   static getFieldHelp(fieldPath) {
     const helpMessages = {
       width: "Largeur totale de la verrière (400-5000mm)",

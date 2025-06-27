@@ -1,4 +1,3 @@
-// ===== js/export/TableRenderer.js =====
 import { DebitsCalculator } from "../calculations/DebitsCalculator.js";
 
 export class TableRenderer {
@@ -10,49 +9,35 @@ export class TableRenderer {
   }
 
   init() {
-    // Écoute les changements de configuration pour recalculer
     this.eventBus.on("configChanged", (config) => {
       this.updateTables(config);
     });
   }
 
-  /**
-   * Met à jour tous les tableaux
-   */
   updateTables(config) {
     try {
-      console.log("🔄 Mise à jour des tableaux avec config:", config);
-
-      // Calcul des débits
       this.currentDebits = DebitsCalculator.calculateDebits(config);
 
-      console.log("📊 Débits calculés:", this.currentDebits);
-
-      // Mise à jour des tableaux
       this.renderProfilesTable(this.currentDebits.profiles);
       this.renderAccessoriesTable(this.currentDebits.accessories);
       this.renderGlassTable(this.currentDebits.glass);
       this.updateTotals(this.currentDebits.totals);
 
-      // Validation
       const validation = DebitsCalculator.validateDebits(
         this.currentDebits,
         config
       );
       this.displayValidation(validation);
     } catch (error) {
-      console.error("❌ Erreur calcul débits:", error);
+      console.error("Erreur calcul débits:", error);
       this.showError("Erreur lors du calcul des débits: " + error.message);
     }
   }
 
-  /**
-   * Rendu du tableau des profilés
-   */
   renderProfilesTable(profiles) {
     const tbody = document.querySelector("#profiles tbody");
     if (!tbody) {
-      console.warn("⚠️ Tableau profiles non trouvé");
+      console.warn("Tableau profiles non trouvé");
       return;
     }
 
@@ -61,8 +46,6 @@ export class TableRenderer {
         '<tr><td colspan="7" class="empty-state">Aucun profilé calculé</td></tr>';
       return;
     }
-
-    console.log("🔧 Rendu tableau profiles:", profiles);
 
     tbody.innerHTML = profiles
       .map(
@@ -84,17 +67,13 @@ export class TableRenderer {
       )
       .join("");
 
-    // Ajouter ligne de sous-total général
     this.addTableSubtotal(tbody, profiles, "Profilés");
   }
 
-  /**
-   * Rendu du tableau des accessoires
-   */
   renderAccessoriesTable(accessories) {
     const tbody = document.querySelector("#accessoires tbody");
     if (!tbody) {
-      console.warn("⚠️ Tableau accessoires non trouvé");
+      console.warn("Tableau accessoires non trouvé");
       return;
     }
 
@@ -124,17 +103,13 @@ export class TableRenderer {
       )
       .join("");
 
-    // Ajouter ligne de sous-total général
     this.addTableSubtotal(tbody, accessories, "Accessoires");
   }
 
-  /**
-   * Rendu du tableau du vitrage
-   */
   renderGlassTable(glass) {
     const tbody = document.querySelector("#remplissage tbody");
     if (!tbody) {
-      console.warn("⚠️ Tableau remplissage non trouvé");
+      console.warn("Tableau remplissage non trouvé");
       return;
     }
 
@@ -162,13 +137,9 @@ export class TableRenderer {
       )
       .join("");
 
-    // Ajouter ligne de sous-total général
     this.addTableSubtotal(tbody, glass, "Remplissage");
   }
 
-  /**
-   * Met à jour les totaux
-   */
   updateTotals(totals) {
     const totalElement = document.getElementById("total-amount");
     if (totalElement) {
@@ -195,9 +166,6 @@ export class TableRenderer {
     }
   }
 
-  /**
-   * Ajoute un sous-total unique par tableau
-   */
   addTableSubtotal(tbody, items, tableLabel) {
     if (!items || items.length === 0) return;
 
@@ -210,7 +178,6 @@ export class TableRenderer {
       subtotalRow.style.backgroundColor = "#f8f9fa";
       subtotalRow.style.fontWeight = "bold";
 
-      // Adapter le nombre de colonnes selon le tableau
       const colCount = tableLabel === "Accessoires" ? 7 : 7;
 
       subtotalRow.innerHTML = `
@@ -228,11 +195,7 @@ export class TableRenderer {
     }
   }
 
-  /**
-   * Affiche la validation des débits
-   */
   displayValidation(validation) {
-    // Supprime les anciens messages
     this.clearValidationMessages();
 
     if (!validation.valid) {
@@ -248,9 +211,6 @@ export class TableRenderer {
     }
   }
 
-  /**
-   * Affiche un message de validation
-   */
   showValidationMessage(message, type = "info") {
     const container = document.getElementById("recapitulatif");
     if (!container) return;
@@ -263,7 +223,6 @@ export class TableRenderer {
       <button class="validation-close" onclick="this.parentElement.remove()">×</button>
     `;
 
-    // Insérer au début du conteneur
     container.insertBefore(messageDiv, container.firstChild);
 
     // Suppression automatique après 5 secondes pour les avertissements
@@ -276,42 +235,24 @@ export class TableRenderer {
     }
   }
 
-  /**
-   * Supprime tous les messages de validation
-   */
   clearValidationMessages() {
     document
       .querySelectorAll(".validation-message")
       .forEach((msg) => msg.remove());
   }
 
-  // ===== FORMATAGE =====
-
-  /**
-   * Formate une longueur (supprimée car on affiche directement en mm)
-   */
   formatLength(length) {
-    // Cette méthode n'est plus utilisée - on affiche directement en mm
     return `${length || 0} mm`;
   }
 
-  /**
-   * Formate un prix
-   */
   formatPrice(price) {
     return `${(price || 0).toFixed(2)} €`;
   }
 
-  /**
-   * Formate une surface
-   */
   formatSurface(surface) {
     return `${(surface || 0).toFixed(2)} m²`;
   }
 
-  /**
-   * Retourne le label d'une catégorie
-   */
   getCategoryLabel(category) {
     const labels = {
       structure: "Structure",
@@ -324,26 +265,19 @@ export class TableRenderer {
     return labels[category] || category;
   }
 
-  /**
-   * Retourne l'icône pour un type de validation
-   */
   getValidationIcon(type) {
     const icons = {
-      error: "❌",
-      warning: "⚠️",
-      info: "ℹ️",
-      success: "✅",
+      error: "X",
+      warning: "!",
+      info: "i",
+      success: "v",
     };
-    return icons[type] || "ℹ️";
+    return icons[type] || "i";
   }
 
-  /**
-   * Affiche un message d'erreur général
-   */
   showError(message) {
     console.error("TableRenderer Error:", message);
 
-    // Vider tous les tableaux
     ["#profiles tbody", "#accessoires tbody", "#remplissage tbody"].forEach(
       (selector) => {
         const tbody = document.querySelector(selector);
@@ -353,18 +287,12 @@ export class TableRenderer {
       }
     );
 
-    // Réinitialiser les totaux
     const totalElement = document.getElementById("total-amount");
     if (totalElement) {
       totalElement.textContent = "Erreur de calcul";
     }
   }
 
-  // ===== MÉTHODES PUBLIQUES =====
-
-  /**
-   * Exporte les débits actuels
-   */
   exportCurrentDebits() {
     if (!this.currentDebits) {
       throw new Error("Aucun débit calculé à exporter");
@@ -372,17 +300,11 @@ export class TableRenderer {
     return this.currentDebits;
   }
 
-  /**
-   * Retourne un résumé des débits
-   */
   getSummary() {
     if (!this.currentDebits) return null;
     return DebitsCalculator.generateSummary(this.currentDebits);
   }
 
-  /**
-   * Force le recalcul avec la configuration actuelle
-   */
   refresh(config) {
     this.updateTables(config);
   }

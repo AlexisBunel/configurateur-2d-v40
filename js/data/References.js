@@ -1,10 +1,5 @@
-// ===== js/data/References.js =====
 export class References {
-  /**
-   * Base de données statique des produits
-   */
   static profiles = {
-    // Profils de cadre principaux
     PC40: {
       ref: "PC40",
       description: "Profil cadre 40",
@@ -151,9 +146,6 @@ export class References {
     },
   };
 
-  /**
-   * Quincaillerie et accessoires
-   */
   static accessories = {
     EQUER100: {
       ref: "EQUER100",
@@ -325,9 +317,6 @@ export class References {
     },
   };
 
-  /**
-   * Remplissage vitrage
-   */
   static glass = {
     VITR6: {
       ref: "REMPLISSAGE-6",
@@ -350,9 +339,6 @@ export class References {
     },
   };
 
-  /**
-   * Finitions et couleurs
-   */
   static finishes = {
     RAL9005: {
       ref: "RAL9005",
@@ -382,9 +368,6 @@ export class References {
     },
   };
 
-  /**
-   * Récupère tous les produits d'une catégorie
-   */
   static getByCategory(category) {
     const allProducts = {
       ...this.profiles,
@@ -398,9 +381,6 @@ export class References {
     );
   }
 
-  /**
-   * Récupère un produit par référence
-   */
   static getByRef(ref) {
     const allProducts = {
       ...this.profiles,
@@ -412,15 +392,11 @@ export class References {
     return allProducts[ref] || null;
   }
 
-  /**
-   * Calcule le prix avec finition
-   */
   static calculatePriceWithFinish(baseProduct, finishColor, length = 1) {
     if (!baseProduct) return 0;
 
     let totalPrice = baseProduct.price * length;
 
-    // Ajouter le coût de finition si applicable
     if (
       baseProduct.category === "structure" ||
       baseProduct.category === "porte"
@@ -435,9 +411,6 @@ export class References {
     return Math.round(totalPrice * 100) / 100;
   }
 
-  /**
-   * Convertit nom couleur en code RAL
-   */
   static getColorRAL(colorName) {
     const colorMap = {
       noir: "9005",
@@ -447,9 +420,6 @@ export class References {
     return colorMap[colorName] || "9005";
   }
 
-  /**
-   * Récupère la référence de joint selon la couleur
-   */
   static getJointRef(color) {
     const jointMap = {
       noir: "JOINOIR",
@@ -459,9 +429,6 @@ export class References {
     return jointMap[color] || "JOINOIR";
   }
 
-  /**
-   * Récupère la référence de béquille selon la couleur
-   */
   static getBequilleRef(color) {
     const bequilleMap = {
       noir: "BEQNOIR",
@@ -470,9 +437,6 @@ export class References {
     return bequilleMap[color] || "BEQNOIR";
   }
 
-  /**
-   * Récupère la référence de charnière selon le type
-   */
   static getCharniereRef(type) {
     const charniereMap = {
       visible: "CHARN_VIS",
@@ -481,21 +445,14 @@ export class References {
     return charniereMap[type] || "CHARN_VIS";
   }
 
-  /**
-   * Récupère la référence de vitrage selon l'épaisseur
-   */
   static getVitrageRef(thickness) {
     return thickness === 8 ? "VITR8" : "VITR6";
   }
 
-  /**
-   * Validations métier
-   */
   static validateProductCompatibility(productRef, config) {
     const product = this.getByRef(productRef);
     if (!product) return { valid: false, message: "Produit inexistant" };
 
-    // Validation hauteur pour profils porte
     if (product.type === "porte" && config.porte?.porteHeight) {
       if (config.porte.porteHeight > product.maxHeight) {
         return {
@@ -508,9 +465,6 @@ export class References {
     return { valid: true };
   }
 
-  /**
-   * Recherche produits par critères
-   */
   static search(criteria = {}) {
     const allProducts = {
       ...this.profiles,
@@ -529,9 +483,6 @@ export class References {
     });
   }
 
-  /**
-   * Statistiques prix
-   */
   static getPriceStats(category = null) {
     const products = category
       ? this.getByCategory(category)

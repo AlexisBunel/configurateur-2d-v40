@@ -1,75 +1,41 @@
 export class PT40Calculator {
-  /**
-   * Calcule toutes les traverses PT40 et PAT40
-   * @param {Object} config - Configuration complète
-   * @returns {Array} Liste des traverses avec longueurs et quantités
-   */
   static calculateTraverses(config) {
     const traverses = [];
 
-    console.log("🔧 Calcul des traverses PT40/PAT40");
-
-    // 1. TRAVERSES VERTICALES (entre modules)
     const traversesVerticales = this.calculateTraversesVerticales(config);
     traverses.push(...traversesVerticales);
 
-    // 2. TRAVERSES HORIZONTALES (selon config.traverses)
     const traversesHorizontales = this.calculateTraversesHorizontales(config);
     traverses.push(...traversesHorizontales);
 
     return traverses;
   }
 
-  /**
-   * Calcule les traverses verticales (entre modules)
-   */
   static calculateTraversesVerticales(config) {
     const { height, modulesCount, type, porteIndex } = config;
     const traverses = [];
 
-    console.log("📏 Calcul traverses verticales");
-
-    // Longueur traverse verticale = hauteur - 80mm (profils haut + bas)
     const longueurVerticale = height - 80;
 
-    // Compter le nombre de traverses verticales nécessaires
     let nombreTraversesVerticales = 0;
 
     if (type === "porte") {
       if (porteIndex === 1 || porteIndex === modulesCount) {
-        // Porte en position extrême (début ou fin)
-        // La porte "enlève" 2 traverses (une de chaque côté du module porte)
         nombreTraversesVerticales = modulesCount - 2;
-        console.log(
-          `🚪 Porte en position extrême (${porteIndex}) : ${modulesCount} modules - 2 = ${nombreTraversesVerticales} traverses`
-        );
       } else if (porteIndex > 1 && porteIndex < modulesCount) {
-        // Porte en position centrale (1 < porteIndex < modulesCount)
-        // La porte "enlève" 3 traverses (une de chaque côté + une au milieu)
         nombreTraversesVerticales = modulesCount - 3;
-        console.log(
-          `🚪 Porte en position centrale (${porteIndex}) : ${modulesCount} modules - 3 = ${nombreTraversesVerticales} traverses`
-        );
       } else {
-        // Cas d'erreur - porteIndex invalide
         console.error(
-          `❌ porteIndex invalide: ${porteIndex} (doit être entre 1 et ${modulesCount})`
+          `porteIndex invalide: ${porteIndex} (doit être entre 1 et ${modulesCount})`
         );
         nombreTraversesVerticales = 0;
       }
     } else {
-      // Sans porte : traverses entre tous les modules
       nombreTraversesVerticales = modulesCount - 1;
-      console.log(
-        `📐 Sans porte : ${modulesCount} modules - 1 = ${nombreTraversesVerticales} traverses`
-      );
     }
-
-    // S'assurer qu'on n'a pas de valeur négative
     nombreTraversesVerticales = Math.max(0, nombreTraversesVerticales);
 
     if (nombreTraversesVerticales > 0) {
-      // PT40 - Traverses verticales
       traverses.push({
         ref: "PT40",
         description: "Traverse verticale",
@@ -79,7 +45,6 @@ export class PT40Calculator {
         type: "traverse_verticale",
       });
 
-      // PAT40 - Parcloses traverses verticales
       traverses.push({
         ref: "PAT40",
         description: "Parclose traverse verticale",
@@ -88,69 +53,41 @@ export class PT40Calculator {
         category: "parclose",
         type: "traverse_verticale",
       });
-
-      console.log(
-        `✅ Ajouté: ${nombreTraversesVerticales} traverses verticales de ${longueurVerticale}mm`
-      );
-    } else {
-      console.log(
-        "⚠️ Aucune traverse verticale nécessaire avec cette configuration"
-      );
     }
-
     return traverses;
   }
 
-  /**
-   * Calcule les traverses horizontales (selon config.traverses)
-   */
   static calculateTraversesHorizontales(config) {
     const { traverses: configTraverses, modules } = config;
     const traversesCalculees = [];
 
     if (!configTraverses || configTraverses.length === 0) {
-      console.log("📭 Aucune traverse horizontale configurée");
       return traversesCalculees;
     }
 
-    console.log("📏 Calcul traverses horizontales");
-
-    // Collecter toutes les longueurs de traverses avec leur fréquence
-    const longueursCumulees = new Map(); // longueur -> quantité
+    const longueursCumulees = new Map();
 
     configTraverses.forEach((traverse, index) => {
-      console.log(`\n--- Traverse ${index + 1} à ${traverse.height}mm ---`);
-      console.log(`Modules concernés: ${traverse.modules.join(", ")}`);
-
-      // Pour chaque module concerné, ajouter sa largeur
       traverse.modules.forEach((numeroModule) => {
         const moduleIndex = numeroModule - 1;
         const module = modules[moduleIndex];
 
         if (module) {
           const largeurModule = module.width || 0;
-          console.log(`  Module ${numeroModule}: ${largeurModule}mm`);
 
-          // Cumuler les longueurs
           const currentCount = longueursCumulees.get(largeurModule) || 0;
           longueursCumulees.set(largeurModule, currentCount + 1);
         } else {
           console.warn(
-            `⚠️ Module ${numeroModule} non trouvé dans la configuration`
+            `Module ${numeroModule} non trouvé dans la configuration`
           );
         }
       });
     });
+    longueursCumulees.forEach((quantite, longueur) => {});
 
-    console.log("\n📊 Résumé des longueurs cumulées:");
-    longueursCumulees.forEach((quantite, longueur) => {
-      console.log(`  ${longueur}mm → ${quantite} traverse(s)`);
-    });
-
-    // Créer les lignes de traverses groupées par longueur
     longueursCumulees.forEach((quantite, longueur) => {
       if (longueur > 0 && quantite > 0) {
-        // PT40 - Traverse horizontale
         traversesCalculees.push({
           ref: "PT40",
           description: `Traverse horizontale`,
@@ -163,7 +100,6 @@ export class PT40Calculator {
           },
         });
 
-        // PAT40 - Parclose traverse horizontale
         traversesCalculees.push({
           ref: "PAT40",
           description: `Parclose traverse horizontale`,
@@ -177,19 +113,8 @@ export class PT40Calculator {
         });
       }
     });
-
-    console.log(
-      `\n✅ ${traversesCalculees.length} lignes de traverses créées (PT40 + PAT40)`
-    );
-
     return traversesCalculees;
   }
-
-  /**
-   * Groupe les modules contigus en segments
-   * @param {Array<number>} modules - Liste des numéros de modules
-   * @returns {Array<Array<number>>} Segments de modules contigus
-   */
   static grouperModulesContigus(modules) {
     if (!modules || modules.length === 0) return [];
 
@@ -199,28 +124,17 @@ export class PT40Calculator {
 
     for (let i = 1; i < modulesTries.length; i++) {
       if (modulesTries[i] === modulesTries[i - 1] + 1) {
-        // Module contigu : ajouter au segment actuel
         segmentActuel.push(modulesTries[i]);
       } else {
-        // Module non contigu : terminer le segment actuel et en commencer un nouveau
         segments.push(segmentActuel);
         segmentActuel = [modulesTries[i]];
       }
     }
-
-    // Ajouter le dernier segment
     segments.push(segmentActuel);
 
     return segments;
   }
 
-  /**
-   * Calcule la longueur d'un segment de traverse horizontale
-   * @param {Array<number>} modulesSegment - Numéros des modules du segment
-   * @param {Array} modulesConfig - Configuration des modules
-   * @param {Object} config - Configuration globale
-   * @returns {number} Longueur du segment en mm
-   */
   static calculerLongueurSegment(modulesSegment, modulesConfig, config) {
     let longueur = 0;
 
@@ -231,41 +145,26 @@ export class PT40Calculator {
       if (module) {
         const largeurModule = module.width || 0;
         longueur += largeurModule;
-        console.log(`  Module ${numeroModule}: ${largeurModule}mm`);
       } else {
-        console.warn(
-          `⚠️ Module ${numeroModule} non trouvé dans la configuration`
-        );
+        console.warn(`Module ${numeroModule} non trouvé dans la configuration`);
       }
     });
 
     return longueur;
   }
 
-  /**
-   * Valide la cohérence des traverses calculées
-   * @param {Array} traverses - Traverses calculées
-   * @param {Object} config - Configuration
-   * @returns {{valid: boolean, warnings: Array<string>}}
-   */
   static validateTraverses(traverses, config) {
     const warnings = [];
-
-    // Vérifier les longueurs négatives
     const negativeLength = traverses.find((t) => t.longueur <= 0);
     if (negativeLength) {
       warnings.push(
         `Longueur négative ou nulle: ${negativeLength.description}`
       );
     }
-
-    // Vérifier les quantités
     const zeroQuantity = traverses.find((t) => t.quantite <= 0);
     if (zeroQuantity) {
       warnings.push(`Quantité nulle: ${zeroQuantity.description}`);
     }
-
-    // Vérifier cohérence PT40/PAT40
     const pt40Count = traverses.filter((t) => t.ref === "PT40").length;
     const pat40Count = traverses.filter((t) => t.ref === "PAT40").length;
 
@@ -278,15 +177,8 @@ export class PT40Calculator {
       warnings,
     };
   }
-
-  /**
-   * Formate les traverses pour affichage dans les tableaux
-   * @param {Array} traverses - Traverses calculées
-   * @returns {Array} Lignes formatées pour le tableau
-   */
   static formatForTable(traverses) {
     return traverses.map((traverse) => {
-      // Déterminer la description de base selon la référence
       let baseDescription;
       if (traverse.ref === "PT40") {
         baseDescription = "Profil traverse 40";
@@ -296,10 +188,8 @@ export class PT40Calculator {
         baseDescription = traverse.description;
       }
 
-      // Ajouter les informations de position spécifiques
       let fullDescription = baseDescription;
 
-      // Analyser le type pour ajouter la position
       if (traverse.type) {
         switch (traverse.type) {
           case "traverse_verticale":
@@ -309,7 +199,6 @@ export class PT40Calculator {
             fullDescription += " - horizontale";
             break;
           default:
-            // Garder la description originale si type non reconnu
             fullDescription = traverse.description;
         }
       }
@@ -319,8 +208,8 @@ export class PT40Calculator {
         description: fullDescription,
         length: traverse.longueur,
         quantity: traverse.quantite,
-        unitPrice: 0, // Prix à définir plus tard
-        totalPrice: 0, // Prix à définir plus tard
+        unitPrice: 0,
+        totalPrice: 0,
         category: traverse.category,
         details: {
           type: traverse.type,
@@ -330,17 +219,11 @@ export class PT40Calculator {
     });
   }
 
-  /**
-   * Génère un rapport complet des traverses
-   * @param {Object} config - Configuration
-   * @returns {Object} Rapport détaillé
-   */
   static generateReport(config) {
     const traverses = this.calculateTraverses(config);
     const validation = this.validateTraverses(traverses, config);
     const tableLines = this.formatForTable(traverses);
 
-    // Calcul des totaux par type
     const pt40Total = traverses
       .filter((t) => t.ref === "PT40")
       .reduce((sum, t) => sum + t.longueur * t.quantite, 0);
